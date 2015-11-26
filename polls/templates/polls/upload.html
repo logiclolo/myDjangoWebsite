@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Minimal Django File Upload Example</title>   
+    </head>
+    <body>
+    <!-- List of uploaded rules -->
+    {% if rules %}
+        <ul>
+        {% for rule in rules %}
+            <li><a href="{{ rule.apiversion }}">{{ rule.apiversion }}</a></li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No rules.</p>
+    {% endif %}
+
+        <!-- Upload form. Note enctype attribute! -->
+        <form action="{% url 'upload' %}" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <p>{{ form.non_field_errors }}</p>
+            <p>{{ form.apiversion.label_tag }}</p>
+            <p>{{ form.apiversion }}</p>
+            <p>{{ form.rulefile.label_tag }} {{ form.rulefile.help_text }}</p>
+            <p>
+                {{ form.rulefile.errors }}
+                {{ form.rulefile }}
+            </p>
+            <p><input type="submit" value="Upload" /></p>
+        </form>
+    </body>
+</html> 

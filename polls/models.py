@@ -20,3 +20,11 @@ class Choice(models.Model):
 
     def __unicode__(self):              # __unicode__ on Python 2
         return self.choice_text
+
+#class Document(models.Model):
+    #docfile = models.FileField(upload_to='documents/%Y/%m/%d')
+
+class VivoCgiRule(models.Model):
+    apiversion = models.CharField(max_length=200)
+    rulefile = models.FileField(upload_to='rules')
+
