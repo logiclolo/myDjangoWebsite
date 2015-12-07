@@ -392,12 +392,13 @@ class api_version_object(object):
 
 
 class CommentedTreeBuilder ( et.XMLTreeBuilder ):
-    def __init__ ( self, html = 0, target = None ):
-        et.XMLTreeBuilder.__init__( self, html, target )
-        self._parser.CommentHandler = self.handle_comment
+	def __init__ ( self, html = 0, target = None ):
+		et.XMLTreeBuilder.__init__( self, html, target )
+		self._parser.CommentHandler = self.handle_comment
     
-    def handle_comment ( self, data ):
-        self._target.start( et.Comment, {} )
-        self._target.data( data )
-        self._target.end( et.Comment )
+	def handle_comment ( self, data ):
+		self._target.start( et.Comment, {} )
+		self._target.data( data )
+		self._target.end( et.Comment )
+
 # vim: tabstop=8 shiftwidth=8 softtabstop=8 noexpandtab
