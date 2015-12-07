@@ -7,6 +7,7 @@ from pprint import pprint
 from xml.dom import minidom
 from lxml import etree
 import subprocess
+import HTMLParser
 
 if sys.version_info[:2] >= (2, 5):
 	import xml.etree.ElementTree as et 
@@ -25,15 +26,16 @@ class base(object):
 	confile = ''
 	method = ''
 	xpath = ''
+	cdf_check = ''
 
 	def __init__(self, action):
 		self.confile = action['file']
 		self.method = action['method']
-		self.et_object = et.parse(action['file'])
-		self.et_root = self.et_object.getroot()
+		#self.et_object = et.parse(action['file'])
+		#self.et_root = self.et_object.getroot()
 		self.conf_path = self.locate_config()
 
-		#print("\n".join(self.conf_path))
+		print("\n".join(self.conf_path))
 
 	def locate_config(self):
 
@@ -54,8 +56,14 @@ class base(object):
 		tmp = reparsed.toprettyxml(indent="\t")
 		
 		# remove the redundant line
-		xml_content = re.sub('(\t+\n+)+', '', tmp) 
+		xml_content = re.sub('(\t+\s*\n+)+', '', tmp) 
 		#xml_content = re.sub('^<?.*?>\n', '', xml_content)
+
+		# handle the escape
+		# eg. &quot, &lt, &gt
+		h = HTMLParser.HTMLParser()
+		xml_content = h.unescape(xml_content)
+
 		return xml_content 
 
 	def output(self, filename, content):
@@ -98,7 +106,15 @@ class add(base):
 				self.parent = m.group(1)
 				self.element = m.group(2)
 
-			self.element_text = rule['value']
+			if rule.has_key('value'):
+				self.element_text = rule['value']
+			else:
+				self.element_text = ''
+
+		if rule.has_key('check'): 
+			self.cdf_check = rule['check']
+		else:
+			self.cdf_check = ''
 
 
 	def action(self):
@@ -123,7 +139,7 @@ class add(base):
 
 
 		for path in self.conf_path:
-			et_object = et.parse(path)
+			et_object = et.parse(path, CommentedTreeBuilder())
 			et_root = et_object.getroot()
 
 			# travel every element of the given xpath
@@ -137,6 +153,14 @@ class add(base):
 
 					if  node == trace[-1]:
 						et_new_node.text = self.element_text
+						if self.cdf_check != '':
+							if self.cdf_check != 'null':
+								et_new_check_node = et.Element('check')
+								et_new_check_node.text = self.cdf_check 
+								et_new_node.append(et_new_check_node)
+							et_new_value_node = et.Element('value')
+							et_new_node.append(et_new_value_node)
+
 
 					ori_object.append(et_new_node)
 					et_object = ori_object.find(node) 
@@ -173,6 +197,11 @@ class remove(base):
 			if m:
 				self.parent = m.group(1)
 				self.element = m.group(2)
+
+		if rule.has_key('check'): 
+			self.cdf_check = rule['check']
+		else:
+			self.cdf_check = ''
 
 	def action(self):
 
@@ -226,6 +255,11 @@ class modify(base):
 			self.xpath = xpath
 			self.element_text = rule['value']
 
+		if rule.has_key('check'): 
+			self.cdf_check = rule['check']
+		else:
+			self.cdf_check = ''
+
 	def action(self):
 
 		stain = False
@@ -238,7 +272,7 @@ class modify(base):
 		self.debug_print()
 
 		for path in self.conf_path:
-			et_object = et.parse(path)
+			et_object = et.parse(path, CommentedTreeBuilder())
 			et_root = et_object.getroot()
 			xpath = re.sub('_', '/', xpath)
 
@@ -357,4 +391,13 @@ class api_version_object(object):
 
 
 
+class CommentedTreeBuilder ( et.XMLTreeBuilder ):
+    def __init__ ( self, html = 0, target = None ):
+        et.XMLTreeBuilder.__init__( self, html, target )
+        self._parser.CommentHandler = self.handle_comment
+    
+    def handle_comment ( self, data ):
+        self._target.start( et.Comment, {} )
+        self._target.data( data )
+        self._target.end( et.Comment )
 # vim: tabstop=8 shiftwidth=8 softtabstop=8 noexpandtab
