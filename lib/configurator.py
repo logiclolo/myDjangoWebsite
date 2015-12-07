@@ -6,57 +6,12 @@ import json
 from pprint import pprint
 from xml.dom import minidom
 from lxml import etree
+from rule_parser import *
 
 if sys.version_info[:2] >= (2, 5):
 	import xml.etree.ElementTree as et 
 else:
 	import elementtree.ElementTree as et 
-
-
-
-class add(object):
-	""" Add the tag into XML """
-
-	def action(self, et_object, parent, tag, text):
-		et_ori_object = et_object
-		trace = parent.split('/')
-		for node in trace:	
-			et_object = et_object.find(node)
-			if et_object == None:
-				return False
-
-		et_new_node = et.Element(tag)
-		et_new_node.text = text 
-		et_object.append(et_new_node)
-		#et_object.insert(1, et_new_node)
-
-		return True
-
-class remove(object):
-	""" Remove the tag from XML """
-
-	def action(self, et_object, xpath):
-		trace = xpath.split('/')
-		for node in trace:	
-			# we must find the parent and then remove its child
-			et_object_parent = et_object
-			et_object = et_object.find(node)
-			if et_object == None:
-				return False	
-
-		et_object_parent.remove(et_object)
-		return True
-		
-
-class modify(object):
-	""" Modify the XML tag content """
-
-	def action(self, et_object, xpath, text):
-		et_target_tag = et_object.find(xpath)
-		et_target_tag.text = text 
-		#et_target_tag.set('update', 'yes')
-
-		return True
 
 def output(filename, content):
 	try:
@@ -81,13 +36,6 @@ def error_msg():
 	print 'The format of rule is wrong!'
 	sys.exit(1)
 
-def ask_user(question, jdata, q_index):
-	while True:
-		print question
-
-		and = raw_input()
-	
-
 def check_rule_condition(cond, jdata):
 	if cond == None: 
 		return True
@@ -105,13 +53,6 @@ def parse_rule(jdata):
 
 	if not jdata.has_key('content'):
 		error_msg()
-
-	if jdata.has_key('content'):
-		questions = jdata['content']['question']
-		for q in questions:
-			if check_rule_condition(q['cond'], jdata):
-				
-
 	#if jdata.has_key('question'):
 		#questions = jdata['content']['question']
 		#for question in questions:
@@ -123,9 +64,7 @@ def parse_rule(jdata):
 				#for q in question:
 					#cond = q['cond']
 
-def upgrade_config(configs):
-
-	sys.exit(0)
+def upgrade_config(configs, actions):
 
 	for f in configs:
 		et_object = et.parse(f)
@@ -149,12 +88,46 @@ def upgrade_config(configs):
 		output(f, content)
 		#et_object.write(f)
 
+def action_dispatch(action, md):
+	confile = action['file']
+	doing_list = action['element']
+
+	print action
+	obj = md(action)
+
+	for do in doing_list:
+		obj.parse(do)
+		ret = obj.action()
+		if ret:
+			print 'Modify successfully!\n'
+		else:
+			print 'The config file may already contain the update you want!\n'
+
+
+	content = prettify(obj.et_root)
+	output(confile, content)	
+
+def update_config(actions):
+
+	for action in actions:
+		if action['method'] == 'add':
+			action_dispatch(action, add)
+		elif action['method'] == 'remove':
+			action_dispatch(action, remove)
+		elif action['method'] == 'modify':
+			action_dispatch(action, modify)
 
 if __name__ == '__main__':
+	obj = api_version_object('test.json') 
+	obj.parse_rule()
+	print obj.actions
 
-	data = open('0301c.json').read()
-	jdata = json.loads(data)
-	parse_rule(jdata)
+	update_config(obj.actions)
+
+
+	#data = open('0301c.json').read()
+	#jdata = json.loads(data)
+	#parse_rule(jdata)
 	#upgrade_config()
 
 
