@@ -6,6 +6,7 @@ import json
 from pprint import pprint
 from xml.dom import minidom
 from lxml import etree
+import subprocess
 
 if sys.version_info[:2] >= (2, 5):
 	import xml.etree.ElementTree as et 
@@ -15,26 +16,65 @@ else:
 debug = True
 
 class base(object):
+	# config file path
+	conf_path = []
+
+	# xml related
 	et_object = None
 	et_root = None
 	confile = ''
 	method = ''
-	path = ''
+	xpath = ''
 
 	def __init__(self, action):
 		self.confile = action['file']
 		self.method = action['method']
 		self.et_object = et.parse(action['file'])
 		self.et_root = self.et_object.getroot()
+		self.conf_path = self.locate_config()
 
+		#print("\n".join(self.conf_path))
+
+	def locate_config(self):
+
+		tmp = []
+
+		flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
+		dirs = subprocess.Popen('find %s -iname %s' % (flash_base, self.confile), shell=True, stdout = subprocess.PIPE).stdout
+		for d in dirs: 	
+			d = re.sub('\n', '', d)
+			tmp.append(d)
+
+		return tmp
+
+	def prettify(self, elem):
+		"""Return a pretty-printed XML string for the Element."""
+		rough_string = et.tostring(elem, 'utf-8')
+		reparsed = minidom.parseString(rough_string)
+		tmp = reparsed.toprettyxml(indent="\t")
+		
+		# remove the redundant line
+		xml_content = re.sub('(\t+\n+)+', '', tmp) 
+		#xml_content = re.sub('^<?.*?>\n', '', xml_content)
+		return xml_content 
+
+	def output(self, filename, content):
+		try:
+			outh = open(filename,'w')
+		except IOError, e:
+			print e
+
+		outh.write(content)
 
 	def debug_print(self):
 
 		if debug:
+			print '\n'
 			print '-----------------------------------------------'
-			print 'confile: %s' % self.confile
 			print 'action: %s' % self.method
-			print 'param: %s' % self.path
+			print 'param: %s' % self.xpath
+			print 'confiles:'
+			print ("\n".join(self.conf_path))
 			print '-----------------------------------------------'
 
 class add(base):
@@ -46,14 +86,14 @@ class add(base):
 
 	def parse(self, rule):
 
-		path = rule['param']
-		self.path = path
+		xpath = rule['param']
+		self.xpath = xpath
 
-		m = re.search('<.*>', path)
+		m = re.search('<.*>', xpath)
 		if m:
-			print 'Has < or > in path'
+			print 'Has < or > in xpath'
 		else:
-			m = re.match('(.*)_(.*)$', path)
+			m = re.match('(.*)_(.*)$', xpath)
 			if m:
 				self.parent = m.group(1)
 				self.element = m.group(2)
@@ -63,10 +103,11 @@ class add(base):
 
 	def action(self):
 
+		stain = None
 		et_new_node = None
-		path = self.path
+		xpath = self.xpath
 
-		if not path:
+		if not xpath:
 			print 'Please assign xpath for add first!'
 			sys.exit(1)
 
@@ -81,26 +122,37 @@ class add(base):
 		#return True
 
 
-		# travel every element of the given xpath
-		# if the element is not in the xml tree, then insert it
-		et_object = self.et_object
-		trace = path.split('_')
-		for node in trace:	
-			ori_object = et_object
-			et_object = et_object.find(node)
-			if et_object == None:
-				et_new_node = et.Element(node)
+		for path in self.conf_path:
+			et_object = et.parse(path)
+			et_root = et_object.getroot()
 
-				if  node == trace[-1]:
-					et_new_node.text = self.element_text
+			# travel every element of the given xpath
+			# if the element is not in the xml tree, then insert it
+			trace = xpath.split('_')
+			for node in trace:	
+				ori_object = et_object
+				et_object = et_object.find(node)
+				if et_object == None:
+					et_new_node = et.Element(node)
 
-				ori_object.append(et_new_node)
-				et_object = ori_object.find(node) 
+					if  node == trace[-1]:
+						et_new_node.text = self.element_text
 
-		if et_new_node:
-			return True 
+					ori_object.append(et_new_node)
+					et_object = ori_object.find(node) 
+
+			if et_new_node is not None:
+				content = self.prettify(et_root)
+				self.output(path, content)
+				et_new_node = None
+			else:
+				print 'The param is already in the %s' % path
+				stain = True
+
+		if stain:
+			return False
 		else:
-			return False 
+			return True
 
 class remove(base):
 	""" Remove the tag from XML """
@@ -110,22 +162,24 @@ class remove(base):
 
 	def parse(self, rule):
 
-		path = rule['param']
-		self.path = path
+		xpath = rule['param']
+		self.xpath = xpath
 
-		m = re.search('<.*>', path)
+		m = re.search('<.*>', xpath)
 		if m:
-			print 'Has < or > in path'
+			print 'Has < or > in xpath'
 		else:
-			m = re.match('(.*)_(.*)$', path)
+			m = re.match('(.*)_(.*)$', xpath)
 			if m:
 				self.parent = m.group(1)
 				self.element = m.group(2)
 
 	def action(self):
-		path = self.path
 
-		if not path:
+		stain = False
+
+		xpath = self.xpath
+		if not xpath:
 			print 'Please assign xpath for remove first!'
 			sys.exit(1)
 
@@ -133,26 +187,29 @@ class remove(base):
 
 		et_object = self.et_object
 
-		xpath = re.sub('_', '/', self.parent)
-		parent = et_object.find(xpath)
-		xpath = re.sub('_', '/', self.path)
-		child = et_object.find(xpath)
+		for path in self.conf_path:
+			et_object = et.parse(path)
+			et_root = et_object.getroot()
 
-		parent.remove(child)
+			xpath = re.sub('_', '/', self.xpath)
+			elem = et_object.find(xpath)
+			if elem is not None:
+				xpath = re.sub('_', '/', self.parent)
+				parent = et_object.find(xpath)
+				xpath = re.sub('_', '/', self.xpath)
+				child = et_object.find(xpath)
+				parent.remove(child)
 
-		return True
+				content = self.prettify(et_root)
+				self.output(path, content)
+			else:
+				stain = True
+				print 'There is no such param in %s' % path 
 
-		#et_object = self.et_object
-		#trace = path.split('_')
-		#for node in trace:	
-			## we must find the parent and then remove its child
-			#et_object_parent = et_object
-			#et_object = et_object.find(node)
-			#if et_object == None:
-				#return False	
-
-		#et_object_parent.remove(et_object)
-		#return True
+		if stain:
+			return False
+		else:
+			return True
 
 class modify(base):
 	""" Modify the XML tag content """
@@ -160,32 +217,47 @@ class modify(base):
 	element_text = ''
 
 	def parse(self, rule):
-		path = rule['param']
+		xpath = rule['param']
 		
-		m = re.search('<.*>', path)
+		m = re.search('<.*>', xpath)
 		if m:
-			print 'Has < or > in path'
+			print 'Has < or > in xpath'
 		else:
-			self.path = path
+			self.xpath = xpath
 			self.element_text = rule['value']
 
 	def action(self):
-		path = self.path
 
-		if not path:
+		stain = False
+
+		xpath = self.xpath
+		if not xpath:
 			print 'Please assign xpath for remove first!'
 			sys.exit(1)
 
 		self.debug_print()
 
-		et_object = self.et_object
-		xpath = re.sub('_', '/', path)
+		for path in self.conf_path:
+			et_object = et.parse(path)
+			et_root = et_object.getroot()
+			xpath = re.sub('_', '/', xpath)
 
-		et_target_tag = et_object.find(xpath)
-		et_target_tag.text = self.element_text 
-		#et_target_tag.set('update', 'yes')
+			et_target_tag = et_object.find(xpath)
 
-		return True
+			if et_target_tag is not None:
+				et_target_tag.text = self.element_text 
+				#et_target_tag.set('update', 'yes')
+
+				content = self.prettify(et_root)
+				self.output(path, content)
+			else:
+				stain = True
+				print 'There is no such param in %s' % path 
+
+		if stain:
+			return False
+		else:
+			return True
 
 
 class api_version_object(object): 
@@ -193,6 +265,7 @@ class api_version_object(object):
 	path = ''
 	spec_content = [] 
 	actions = []
+	config_path = []
 
 	def __init__(self, path):
 		self.path = path
@@ -250,6 +323,8 @@ class api_version_object(object):
 			
 			question['ans'] = ans
 
+	def locate_config(self):
+		actions = self.actions
 
 	def parse_rule(self):
 		data = open(self.path).read()  
