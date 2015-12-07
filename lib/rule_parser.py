@@ -217,7 +217,7 @@ class remove(base):
 		et_object = self.et_object
 
 		for path in self.conf_path:
-			et_object = et.parse(path)
+			et_object = et.parse(path, CommentedTreeBuilder())
 			et_root = et_object.getroot()
 
 			xpath = re.sub('_', '/', self.xpath)
