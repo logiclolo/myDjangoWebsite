@@ -19,6 +19,7 @@ debug = True
 class base(object):
 	# config file path
 	conf_path = []
+	conf_nmediastream = []
 
 	# xml related
 	et_object = None
@@ -48,6 +49,21 @@ class base(object):
 			tmp.append(d)
 
 		return tmp
+
+	def fetch_nmediastream(self):
+
+		capability = 'config_capability.xml'
+		xpath = 'capability/nmediastream'
+
+		for p in self.conf_path:
+			dirname = os.path.dirname(p)
+			caps = subprocess.Popen('find %s -iname %s' % (dirname, capability), shell=True, stdout = subprocess.PIPE).stdout
+			for cap in caps:
+				cap = re.sub('\n', '', cap)
+				et_object = et.parse(cap)
+				elem = et_object.find(xpath)
+				self.conf_nmediastream.append(elem.text)
+
 
 	def prettify(self, elem):
 		"""Return a pretty-printed XML string for the Element."""
@@ -99,7 +115,15 @@ class add(base):
 
 		m = re.search('<.*>', xpath)
 		if m:
-			print 'Has < or > in xpath'
+			# find <n>, <m> or <..> 
+			prog = re.compile('<(.*)>')
+			results = prog.findall(xpath)
+
+			for result in results:
+				if result == 'n':
+					self.fetch_nmediastream()
+					print 'Has <n> in xpath'
+					print self.conf_nmediastream
 		else:
 			m = re.match('(.*)_(.*)$', xpath)
 			if m:
@@ -129,15 +153,6 @@ class add(base):
 
 		self.debug_print()
 
-		#et_object = self.et_object
-		#xpath = re.sub('_', '/', self.parent)
-		#parent = et_object.find(xpath)
-		#child = et.Element(self.element)
-		#child.text = self.element_text
-		#parent.append(child)
-		#return True
-
-
 		for path in self.conf_path:
 			et_object = et.parse(path, CommentedTreeBuilder())
 			et_root = et_object.getroot()
@@ -154,7 +169,7 @@ class add(base):
 					if  node == trace[-1]:
 						et_new_node.text = self.element_text
 						if self.cdf_check != '':
-							if self.cdf_check != 'null':
+							if self.cdf_check != None and self.cdf_check != 'null':
 								et_new_check_node = et.Element('check')
 								et_new_check_node.text = self.cdf_check 
 								et_new_node.append(et_new_check_node)
@@ -309,7 +324,7 @@ class api_version_object(object):
 		sys.exit(1)
 
 	def check_cond(self, cond, ques):
-		print '### ready to check cond: %s' % cond
+		print 'ready to check cond: %s' % cond
 		if cond == True:
 			return True
 		
@@ -383,8 +398,10 @@ class api_version_object(object):
 
 			for task in tasks: 
 				if self.check_cond(task['cond'], questions):
-					print '%s is match!!!!!!' % task['cond'] 
+					print '%s is match' % task['cond'] 
 					self.actions = self.actions + task['action'] 
+				else:
+					print 'not match'
 
 
 
