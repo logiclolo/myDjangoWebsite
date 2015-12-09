@@ -8,6 +8,7 @@ from xml.dom import minidom
 from lxml import etree
 import subprocess
 import HTMLParser
+from copy import deepcopy
 
 if sys.version_info[:2] >= (2, 5):
 	import xml.etree.ElementTree as et 
@@ -27,42 +28,97 @@ class base(object):
 	confile = ''
 	method = ''
 	xpath = ''
+	xpaths = []
 	cdf_check = ''
+	do_list = []
 
 	def __init__(self, action):
 		self.confile = action['file']
 		self.method = action['method']
-		#self.et_object = et.parse(action['file'])
-		#self.et_root = self.et_object.getroot()
-		self.conf_path = self.locate_config()
+		self.locate_config(action['element'])
+		self.parse(action['element'])
 
-		print("\n".join(self.conf_path))
+		#print json.dumps(action['element'], indent=4, sort_keys=True)
 
-	def locate_config(self):
+	def locate_config(self, rule_element):
 
 		tmp = []
+		tmp1 = {}
 
 		flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
 		dirs = subprocess.Popen('find %s -iname %s' % (flash_base, self.confile), shell=True, stdout = subprocess.PIPE).stdout
 		for d in dirs: 	
 			d = re.sub('\n', '', d)
-			tmp.append(d)
+			tmp1['file'] = d
+			tmp1['param'] = []
+			#tmp.append(tmp1.copy()) #copy() is the trick to copy by value
+			tmp.append(deepcopy(tmp1)) #copy() is the trick to copy by value
 
-		return tmp
+		for element in rule_element:
+			element['detail'] = deepcopy(tmp) #deepcopy() is the trick to copy by value
 
-	def fetch_nmediastream(self):
+	def fetch_nmediastream(self, rule_detail):
 
 		capability = 'config_capability.xml'
 		xpath = 'capability/nmediastream'
 
-		for p in self.conf_path:
-			dirname = os.path.dirname(p)
+		for de in rule_detail:
+			dirname = os.path.dirname(de['file'])
 			caps = subprocess.Popen('find %s -iname %s' % (dirname, capability), shell=True, stdout = subprocess.PIPE).stdout
 			for cap in caps:
 				cap = re.sub('\n', '', cap)
 				et_object = et.parse(cap)
 				elem = et_object.find(xpath)
-				self.conf_nmediastream.append(elem.text)
+				#self.conf_nmediastream.append(elem.text)
+
+				de['s<n>'] = elem.text
+
+	def gen_param(self, xpath, rule_element):
+
+		# find c<n>, s<n> or <..> 
+		# and replace the variable with real number/value
+		#
+		#
+		# all the result is in self.do_list and 
+		# finally saved to rule_element['detail']
+		# the self.action() would use these detail
+
+		prog = re.compile('c<n>')
+		patterns = prog.findall(xpath)
+		if len(patterns) > 0:
+			pattern = patterns[0]
+
+			for de in rule_element['detail']:
+				if len(de['param']) == 0:
+					value = re.sub(pattern, 'c0', xpath)
+					de['param'].append(value)
+
+				else:
+					tmp = []
+					for param in de['param']:
+						value = re.sub(pattern, 'c0', param)
+						tmp.append(value)
+					de['param'] = tmp
+
+
+		prog = re.compile('s<n>')
+		patterns1 = prog.findall(xpath)
+		self.fetch_nmediastream(rule_element['detail'])
+		if len(patterns1) > 0:
+			pattern = patterns1[0]
+
+			for de in rule_element['detail']:
+				if len(de['param']) == 0:
+					for i in range(0, int(de[pattern])):
+						value = re.sub(pattern, 's%d' % i, xpath)
+						de['param'].append(value)
+				else:
+					tmp = []
+					for param in de['param']:
+						for i in range(0, int(de[pattern])):
+							value = re.sub(pattern, 's%d' % i, param)
+							tmp.append(value)
+					de['param'] = tmp
 
 
 	def prettify(self, elem):
@@ -97,8 +153,6 @@ class base(object):
 			print '-----------------------------------------------'
 			print 'action: %s' % self.method
 			print 'param: %s' % self.xpath
-			print 'confiles:'
-			print ("\n".join(self.conf_path))
 			print '-----------------------------------------------'
 
 class add(base):
@@ -108,77 +162,63 @@ class add(base):
 	element = ''
 	element_text = ''
 
-	def parse(self, rule):
+	def parse(self, rule_element):
 
-		xpath = rule['param']
-		self.xpath = xpath
+		for element in rule_element:
+			xpath = element['param']
 
-		m = re.search('<.*>', xpath)
-		if m:
-			# find <n>, <m> or <..> 
-			prog = re.compile('<(.*)>')
-			results = prog.findall(xpath)
-
-			for result in results:
-				if result == 'n':
-					self.fetch_nmediastream()
-					print 'Has <n> in xpath'
-					print self.conf_nmediastream
-		else:
-			m = re.match('(.*)_(.*)$', xpath)
+			m = re.search('<.*>', xpath)
 			if m:
-				self.parent = m.group(1)
-				self.element = m.group(2)
-
-			if rule.has_key('value'):
-				self.element_text = rule['value']
+				self.gen_param(xpath, element)
 			else:
-				self.element_text = ''
-
-		if rule.has_key('check'): 
-			self.cdf_check = rule['check']
-		else:
-			self.cdf_check = ''
+				for de in element['detail']:
+					de['param'] = xpath
 
 
-	def action(self):
+	def action(self, rule_element):
 
 		stain = None
 		et_new_node = None
 		xpath = self.xpath
+		xpaths = self.xpaths
 
-		if not xpath:
-			print 'Please assign xpath for add first!'
-			sys.exit(1)
 
-		self.debug_print()
+		print json.dumps(rule_element, indent=4, sort_keys=True)
+		sys.exit(0)
+
+		#if not xpath:
+			#print 'Please assign xpath for add first!'
+			#sys.exit(1)
+
+		#self.debug_print()
 
 		for path in self.conf_path:
 			et_object = et.parse(path, CommentedTreeBuilder())
 			et_root = et_object.getroot()
 
-			# travel every element of the given xpath
-			# if the element is not in the xml tree, then insert it
-			trace = xpath.split('_')
-			for node in trace:	
-				ori_object = et_object
-				et_object = et_object.find(node)
-				if et_object == None:
-					et_new_node = et.Element(node)
+			for xpath in xpaths: 
+				# travel every element of the given xpath
+				# if the element is not in the xml tree, then insert it
+				trace = xpath.split('_')
+				for node in trace:	
+					ori_object = et_object
+					et_object = et_object.find(node)
+					if et_object == None:
+						et_new_node = et.Element(node)
 
-					if  node == trace[-1]:
-						et_new_node.text = self.element_text
-						if self.cdf_check != '':
-							if self.cdf_check != None and self.cdf_check != 'null':
-								et_new_check_node = et.Element('check')
-								et_new_check_node.text = self.cdf_check 
-								et_new_node.append(et_new_check_node)
-							et_new_value_node = et.Element('value')
-							et_new_node.append(et_new_value_node)
+						if  node == trace[-1]:
+							et_new_node.text = self.element_text
+							if self.cdf_check != '':
+								if self.cdf_check != None and self.cdf_check != 'null':
+									et_new_check_node = et.Element('check')
+									et_new_check_node.text = self.cdf_check 
+									et_new_node.append(et_new_check_node)
+								et_new_value_node = et.Element('value')
+								et_new_node.append(et_new_value_node)
 
 
-					ori_object.append(et_new_node)
-					et_object = ori_object.find(node) 
+						ori_object.append(et_new_node)
+						et_object = ori_object.find(node) 
 
 			if et_new_node is not None:
 				content = self.prettify(et_root)
