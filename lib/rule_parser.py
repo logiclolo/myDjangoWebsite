@@ -117,7 +117,7 @@ class base(object):
 					tmp = []
 					for param in de['xpath']:
 						for i in range(0, int(de[pattern])):
-							value = re.sub(pattern, 'c%d' % i, param)
+							value = re.sub(pattern, 's%d' % i, param)
 							tmp.append(value)
 					de['xpath'] = deepcopy(tmp)
 
@@ -170,11 +170,12 @@ class add(base):
 		for element in rule_element:
 			xpath = element['param']
 
-			# initial a new key
-			element['detail'] = [] 
+			# initial a new key as metadata
+			detail = element['detail'] = [] 
 			tmp = {"xpath":[]}
 			for p in rule_action['path']:
-				element['detail'].append(deepcopy(tmp))
+				detail.append(deepcopy(tmp))
+
 
 			m = re.search('<.*>', xpath)
 			if m:
@@ -184,98 +185,77 @@ class add(base):
 					de['xpath'].append(xpath)
 
 
+	def insert_new_node(self, et_object, xpaths, rule_element):
+
+		et_new_node = None
+		et_ori_object = et_object
+
+		for xpath in xpaths: 
+			# travel every element of the given xpath
+			# if the element is not in the xml tree, then insert it
+			trace = xpath.split('_')
+			for node in trace:	
+				ori_object = et_object
+				et_object = et_object.find(node)
+				if et_object == None:
+					et_new_node = et.Element(node)
+
+					if  node == trace[-1]:
+						if rule_element.has_key('value'):
+							et_new_node.text = rule_element['value'] 
+						if rule_element.has_key('check'):
+							check = rule_element['check']
+							if check != None and check != 'null':
+								et_new_check_node = et.Element('check')
+								et_new_check_node.text = check 
+								et_new_node.append(et_new_check_node)
+							et_new_value_node = et.Element('value')
+							et_new_node.append(et_new_value_node)
+
+
+					ori_object.append(et_new_node)
+					et_object = ori_object.find(node) 
+
+			et_object = et_ori_object
+
+		return et_new_node
+
+
 	def action(self, rule_action):
 
 		stain = None
 		et_new_node = None
-		xpath = self.xpath
-		xpaths = self.xpaths
-
-		if not xpath:
-			print 'Please assign xpath for add first!'
-			sys.exit(1)
 
 		#self.debug_print()
 
-		details = rule_action['detail']
-		for detail in details:
-			fpath = detail['file']	
-			et_object = et.parse(fpath, CommentedTreeBuilder())
+		paths = rule_action['path']
+		elements = rule_action['element']
+
+		for path in paths:
+			print path
+			et_object = et.parse(path, CommentedTreeBuilder())
 			et_root = et_object.getroot()
 
-			xpaths = details['param']
-			for xpath in xpaths: 
-				# travel every element of the given xpath
-				# if the element is not in the xml tree, then insert it
-				trace = xpath.split('_')
-				for node in trace:	
-					ori_object = et_object
-					et_object = et_object.find(node)
-					if et_object == None:
-						et_new_node = et.Element(node)
+			for element in elements:
+				index = paths.index(path)
+				detail = element['detail'][index]
+				xpaths = detail['xpath']
 
-						if  node == trace[-1]:
-							et_new_node.text = self.element_text
-							if self.cdf_check != '':
-								if self.cdf_check != None and self.cdf_check != 'null':
-									et_new_check_node = et.Element('check')
-									et_new_check_node.text = self.cdf_check 
-									et_new_node.append(et_new_check_node)
-								et_new_value_node = et.Element('value')
-								et_new_node.append(et_new_value_node)
+				et_new_node = self.insert_new_node(et_object, xpaths, element)	
 
+				if et_new_node != None:
+					stain =True
 
-						ori_object.append(et_new_node)
-						et_object = ori_object.find(node) 
-
-			if et_new_node is not None:
+			if stain:
 				content = self.prettify(et_root)
 				self.output(path, content)
-				et_new_node = None
 			else:
 				print 'The param is already in the %s' % path
-				stain = True
-
-		#for path in self.conf_path:
-			#et_object = et.parse(path, CommentedTreeBuilder())
-			#et_root = et_object.getroot()
-
-			#for xpath in xpaths: 
-				## travel every element of the given xpath
-				## if the element is not in the xml tree, then insert it
-				#trace = xpath.split('_')
-				#for node in trace:	
-					#ori_object = et_object
-					#et_object = et_object.find(node)
-					#if et_object == None:
-						#et_new_node = et.Element(node)
-
-						#if  node == trace[-1]:
-							#et_new_node.text = self.element_text
-							#if self.cdf_check != '':
-								#if self.cdf_check != None and self.cdf_check != 'null':
-									#et_new_check_node = et.Element('check')
-									#et_new_check_node.text = self.cdf_check 
-									#et_new_node.append(et_new_check_node)
-								#et_new_value_node = et.Element('value')
-								#et_new_node.append(et_new_value_node)
-
-
-						#ori_object.append(et_new_node)
-						#et_object = ori_object.find(node) 
-
-			#if et_new_node is not None:
-				#content = self.prettify(et_root)
-				#self.output(path, content)
-				#et_new_node = None
-			#else:
-				#print 'The param is already in the %s' % path
-				#stain = True
 
 		if stain:
-			return False
+			return True 
 		else:
-			return True
+			return False 
 
 class remove(base):
 	""" Remove the tag from XML """

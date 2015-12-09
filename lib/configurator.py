@@ -22,19 +22,7 @@ def output(filename, content):
 	outh.write(content)
 
 def action_dispatch(action, md):
-	#confile = action['file']
-	#doing_list = action['element']
-
-	#obj = md(action)
-
-	#for do in doing_list:
-		#obj.parse(do)
-		#ret = obj.action()
-		#if ret:
-			#print 'Modify successfully!\n'
-
 	obj = md(action)
-	#obj.parse(action)
 	ret = obj.action(action)
 	if ret:
 		print 'Modify successfully!\n'
