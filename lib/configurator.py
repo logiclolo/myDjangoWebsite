@@ -35,7 +35,7 @@ def action_dispatch(action, md):
 
 	obj = md(action)
 	#obj.parse(action)
-	ret = obj.action(action['element'])
+	ret = obj.action(action)
 	if ret:
 		print 'Modify successfully!\n'
 

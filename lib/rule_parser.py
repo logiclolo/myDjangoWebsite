@@ -35,35 +35,33 @@ class base(object):
 	def __init__(self, action):
 		self.confile = action['file']
 		self.method = action['method']
-		self.locate_config(action['element'])
-		self.parse(action['element'])
+		self.locate_config(action)
+		self.parse(action)
 
-		#print json.dumps(action['element'], indent=4, sort_keys=True)
+		print json.dumps(action, indent=4, sort_keys=True)
 
-	def locate_config(self, rule_element):
+	def locate_config(self, rule_action):
 
 		tmp = []
-		tmp1 = {}
 
 		flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
 		dirs = subprocess.Popen('find %s -iname %s' % (flash_base, self.confile), shell=True, stdout = subprocess.PIPE).stdout
 		for d in dirs: 	
 			d = re.sub('\n', '', d)
-			tmp1['file'] = d
-			tmp1['param'] = []
-			#tmp.append(tmp1.copy()) #copy() is the trick to copy by value
-			tmp.append(deepcopy(tmp1)) #copy() is the trick to copy by value
+			tmp.append(d) 
 
-		for element in rule_element:
-			element['detail'] = deepcopy(tmp) #deepcopy() is the trick to copy by value
+		rule_action['path'] = deepcopy(tmp) #deepcopy is the trick to copy by value
 
-	def fetch_nmediastream(self, rule_detail):
+	def fetch_nmediastream(self, rule_element, rule_action):
 
 		capability = 'config_capability.xml'
 		xpath = 'capability/nmediastream'
 
-		for de in rule_detail:
-			dirname = os.path.dirname(de['file'])
+		rule_path = rule_action['path']
+		detail = rule_element['detail'] 
+
+		for path in rule_path:
+			dirname = os.path.dirname(path)
 			caps = subprocess.Popen('find %s -iname %s' % (dirname, capability), shell=True, stdout = subprocess.PIPE).stdout
 			for cap in caps:
 				cap = re.sub('\n', '', cap)
@@ -71,54 +69,57 @@ class base(object):
 				elem = et_object.find(xpath)
 				#self.conf_nmediastream.append(elem.text)
 
-				de['s<n>'] = elem.text
+				index = rule_path.index(path)
+				detail[index]["s<n>"] = elem.text 
 
-	def gen_param(self, xpath, rule_element):
+	def gen_param(self, xpath, rule_element, rule_action):
 
 		# find c<n>, s<n> or <..> 
 		# and replace the variable with real number/value
 		#
 		#
-		# all the result is in self.do_list and 
-		# finally saved to rule_element['detail']
-		# the self.action() would use these detail
+		# The final result is saved to rule_action['detail']  
+		# and after that self.action() would use these detail
+
+		rule_detail = rule_element['detail']
 
 		prog = re.compile('c<n>')
 		patterns = prog.findall(xpath)
 		if len(patterns) > 0:
 			pattern = patterns[0]
 
-			for de in rule_element['detail']:
-				if len(de['param']) == 0:
+			for de in rule_detail:	
+				if len(de['xpath']) == 0:
 					value = re.sub(pattern, 'c0', xpath)
-					de['param'].append(value)
+					de['xpath'].append(value)
 
 				else:
 					tmp = []
-					for param in de['param']:
+					for param in de['xpath']:
 						value = re.sub(pattern, 'c0', param)
 						tmp.append(value)
-					de['param'] = tmp
+					de['xpath'] = deepcopy(tmp)
 
 
 		prog = re.compile('s<n>')
 		patterns1 = prog.findall(xpath)
-		self.fetch_nmediastream(rule_element['detail'])
+		self.fetch_nmediastream(rule_element, rule_action)
 		if len(patterns1) > 0:
 			pattern = patterns1[0]
 
-			for de in rule_element['detail']:
-				if len(de['param']) == 0:
+			for de in rule_detail:	
+				if len(de['xpath']) == 0:
 					for i in range(0, int(de[pattern])):
 						value = re.sub(pattern, 's%d' % i, xpath)
-						de['param'].append(value)
+						de['xpath'].append(value)
+
 				else:
 					tmp = []
-					for param in de['param']:
+					for param in de['xpath']:
 						for i in range(0, int(de[pattern])):
-							value = re.sub(pattern, 's%d' % i, param)
+							value = re.sub(pattern, 'c%d' % i, param)
 							tmp.append(value)
-					de['param'] = tmp
+					de['xpath'] = deepcopy(tmp)
 
 
 	def prettify(self, elem):
@@ -162,40 +163,47 @@ class add(base):
 	element = ''
 	element_text = ''
 
-	def parse(self, rule_element):
+	def parse(self, rule_action):
+
+		rule_element = rule_action['element']
 
 		for element in rule_element:
 			xpath = element['param']
 
+			# initial a new key
+			element['detail'] = [] 
+			tmp = {"xpath":[]}
+			for p in rule_action['path']:
+				element['detail'].append(deepcopy(tmp))
+
 			m = re.search('<.*>', xpath)
 			if m:
-				self.gen_param(xpath, element)
+				self.gen_param(xpath, element, rule_action)
 			else:
 				for de in element['detail']:
-					de['param'] = xpath
+					de['xpath'].append(xpath)
 
 
-	def action(self, rule_element):
+	def action(self, rule_action):
 
 		stain = None
 		et_new_node = None
 		xpath = self.xpath
 		xpaths = self.xpaths
 
-
-		print json.dumps(rule_element, indent=4, sort_keys=True)
-		sys.exit(0)
-
-		#if not xpath:
-			#print 'Please assign xpath for add first!'
-			#sys.exit(1)
+		if not xpath:
+			print 'Please assign xpath for add first!'
+			sys.exit(1)
 
 		#self.debug_print()
 
-		for path in self.conf_path:
-			et_object = et.parse(path, CommentedTreeBuilder())
+		details = rule_action['detail']
+		for detail in details:
+			fpath = detail['file']	
+			et_object = et.parse(fpath, CommentedTreeBuilder())
 			et_root = et_object.getroot()
 
+			xpaths = details['param']
 			for xpath in xpaths: 
 				# travel every element of the given xpath
 				# if the element is not in the xml tree, then insert it
@@ -227,6 +235,42 @@ class add(base):
 			else:
 				print 'The param is already in the %s' % path
 				stain = True
+
+		#for path in self.conf_path:
+			#et_object = et.parse(path, CommentedTreeBuilder())
+			#et_root = et_object.getroot()
+
+			#for xpath in xpaths: 
+				## travel every element of the given xpath
+				## if the element is not in the xml tree, then insert it
+				#trace = xpath.split('_')
+				#for node in trace:	
+					#ori_object = et_object
+					#et_object = et_object.find(node)
+					#if et_object == None:
+						#et_new_node = et.Element(node)
+
+						#if  node == trace[-1]:
+							#et_new_node.text = self.element_text
+							#if self.cdf_check != '':
+								#if self.cdf_check != None and self.cdf_check != 'null':
+									#et_new_check_node = et.Element('check')
+									#et_new_check_node.text = self.cdf_check 
+									#et_new_node.append(et_new_check_node)
+								#et_new_value_node = et.Element('value')
+								#et_new_node.append(et_new_value_node)
+
+
+						#ori_object.append(et_new_node)
+						#et_object = ori_object.find(node) 
+
+			#if et_new_node is not None:
+				#content = self.prettify(et_root)
+				#self.output(path, content)
+				#et_new_node = None
+			#else:
+				#print 'The param is already in the %s' % path
+				#stain = True
 
 		if stain:
 			return False
