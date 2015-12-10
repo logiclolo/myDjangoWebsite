@@ -180,77 +180,6 @@ class base(object):
 class add(base):
 	""" Add the tag into XML """
 
-	parent = ''	
-	element = ''
-	element_text = ''
-
-	def parse1(self, rule_action):
-
-		rule_element = rule_action['element']
-
-		for element in rule_element:
-			xpath = element['param']
-
-			# initial a new key as metadata
-			detail = element['detail'] = [] 
-			tmp = {"xpath":[]}
-			for p in rule_action['path']:
-				detail.append(deepcopy(tmp))
-
-
-			m = re.search('<.*>', xpath)
-			if m:
-				self.gen_param(xpath, element, rule_action)
-			else:
-				for de in element['detail']:
-					de['xpath'].append(xpath)
-
-
-	def insert_new_xpath(self, et_object, xpaths, rule_element):
-
-		et_new_node = None
-		et_ori_object = et_object
-
-		for xpath in xpaths: 
-			# travel every element of the given xpath
-			# if the element is not in the xml tree, then insert it
-			trace = xpath.split('_')
-			for node in trace:	
-				ori_object = et_object
-				et_object = et_object.find(node)
-				if et_object == None:
-					et_new_node = et.Element(node)
-
-					# the last element in the xpath may have <check> or <value>
-					if  node == trace[-1]:
-						if rule_element.has_key('value'):
-							value = str(rule_element['value'])
-							m = re.match('\?(.*)', value)
-							if m:
-								et_new_node.text = m.group(1) 
-								et_comment_node = et.Comment('[Notice] Please modify the default value below !!!')
-								ori_object.append(et_comment_node)
-							else:
-								et_new_node.text = value 
-
-						if rule_element.has_key('check'):
-							check = rule_element['check']
-							if check != None and check != 'null':
-								et_new_check_node = et.Element('check')
-								et_new_check_node.text = str(check)
-								et_new_node.append(et_new_check_node)
-							et_new_value_node = et.Element('value')
-							et_new_node.append(et_new_value_node)
-
-
-					ori_object.append(et_new_node)
-					et_object = ori_object.find(node) 
-
-			et_object = et_ori_object
-
-		return et_new_node
-
-
 	def action(self, rule_action):
 
 		stain = False 
@@ -287,30 +216,54 @@ class add(base):
 		else:
 			return False 
 
+	def insert_new_xpath(self, et_object, xpaths, rule_element):
+
+		et_new_node = None
+		et_ori_object = et_object
+
+		for xpath in xpaths: 
+			# travel every element of the given xpath
+			# if the element is not in the xml tree, then insert it
+			trace = xpath.split('_')
+			for node in trace:	
+				ori_object = et_object
+				et_object = et_object.find(node)
+				if et_object == None:
+					et_new_node = et.Element(node)
+
+					# the last element in the xpath may have <check> or <value>
+					if  node == trace[-1]:
+						if rule_element.has_key('value'):
+							value = str(rule_element['value'])
+							m = re.match('\?(.*)', value)
+							if m:
+								# default value
+								et_new_node.text = m.group(1) 
+								et_comment_node = et.Comment('[Notice] Please modify the default value below !!!')
+								ori_object.append(et_comment_node)
+							else:
+								et_new_node.text = value 
+
+						if rule_element.has_key('check'):
+							check = rule_element['check']
+							if check != None and check != 'null':
+								et_new_check_node = et.Element('check')
+								et_new_check_node.text = str(check)
+								et_new_node.append(et_new_check_node)
+							et_new_value_node = et.Element('value')
+							et_new_node.append(et_new_value_node)
+
+
+					ori_object.append(et_new_node)
+					et_object = ori_object.find(node) 
+
+			et_object = et_ori_object
+
+		return et_new_node
+
+
 class remove(base):
 	""" Remove the tag from XML """
-
-	parent = ''
-	element = '' 
-
-	def parse1(self, rule):
-
-		xpath = rule['param']
-		self.xpath = xpath
-
-		m = re.search('<.*>', xpath)
-		if m:
-			print 'Has < or > in xpath'
-		else:
-			m = re.match('(.*)_(.*)$', xpath)
-			if m:
-				self.parent = m.group(1)
-				self.element = m.group(2)
-
-		if rule.has_key('check'): 
-			self.cdf_check = rule['check']
-		else:
-			self.cdf_check = ''
 
 	def remove_xpath(self, et_object, xpaths):
 
@@ -321,11 +274,9 @@ class remove(base):
 			if m:
 				parent = et_object.find(m.group(1))
 				child = et_object.find(xpath)
-				parent.remove(child)
-				
-				ret = True
-
-
+				if parent != None and child != None:
+					parent.remove(child)
+					ret = True
 		return ret
 
 	def action(self, rule_action):
@@ -354,49 +305,13 @@ class remove(base):
 				self.output(path, content)
 				stain = True
 			else:
-				print 'The param is already in the %s' % path
+				print 'The param is not in the %s' % path
 
 		if stain:
 			return True 
 		else:
 			return False 
 
-	def action_ori(self):
-
-		stain = False
-
-		xpath = self.xpath
-		if not xpath:
-			print 'Please assign xpath for remove first!'
-			sys.exit(1)
-
-		self.debug_print()
-
-		et_object = self.et_object
-
-		for path in self.conf_path:
-			et_object = et.parse(path, CommentedTreeBuilder())
-			et_root = et_object.getroot()
-
-			xpath = re.sub('_', '/', self.xpath)
-			elem = et_object.find(xpath)
-			if elem is not None:
-				xpath = re.sub('_', '/', self.parent)
-				parent = et_object.find(xpath)
-				xpath = re.sub('_', '/', self.xpath)
-				child = et_object.find(xpath)
-				parent.remove(child)
-
-				content = self.prettify(et_root)
-				self.output(path, content)
-			else:
-				stain = True
-				print 'There is no such param in %s' % path 
-
-		if stain:
-			return False
-		else:
-			return True
 
 class modify(base):
 	""" Modify the XML tag content """
