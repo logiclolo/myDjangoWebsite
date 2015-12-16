@@ -9,6 +9,7 @@ from lxml import etree
 import subprocess
 import HTMLParser
 from copy import deepcopy
+from configer import *
 
 if sys.version_info[:2] >= (2, 5):
 	import xml.etree.ElementTree as et 
@@ -359,23 +360,37 @@ class modify(base):
 
 class api_version_object(object): 
 	version = '' 
-	path = ''
+	api_rule = ''
+	common_rule = ''
 	spec_content = [] 
 	actions = []
 	config_path = []
+	macro = [] 
 
 	def __init__(self, path):
-		self.path = path
+		self.api_rule = path
+		self.common_rule = 'rule.json'
 
 	def error_msg(self):
 		print 'The format of rule is wrong!'
 		sys.exit(1)
 
 	def check_cond(self, cond, ques):
-		print 'ready to check cond: %s' % cond
+		print '[check condition] %s' % cond
 		if cond == True:
 			return True
 		
+
+		# cond in rule.json
+		tmp = re.sub("'", "", cond)
+		m = re.match('(.*)\sin\s(.*)', tmp)
+		if m:
+			value = m.group(1) 
+			param = m.group(2)
+
+
+
+		# cond in api_version.json, eg. 0301c.json
 		m = re.match('qid\[(.*)\].*=(.*)', cond)
 		if ques != None and m:
 			#print m.group(1)
@@ -420,11 +435,158 @@ class api_version_object(object):
 			
 			question['ans'] = ans
 
-	def locate_config(self):
-		actions = self.actions
+	def fetch_models(self):
+		# Find numbers of model 
+		#
+		# Use config_capability.xml to find models, 
+		# and save the result in self.macro
 
-	def parse_rule(self):
-		data = open(self.path).read()  
+		tmp = {} 
+		capability = 'config_capability.xml'
+
+		flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
+		dirs = subprocess.Popen('find %s -iname %s' % (flash_base, capability), shell=True, stdout = subprocess.PIPE).stdout
+		for d in dirs: 	
+			d = re.sub('\n', '', d)
+			m = re.search('.*/([A-Z][A-Z][0-9A-Z]+)/.*', d)
+			if m:
+				tmp['model'] = m.group(1) 
+			self.macro.append(deepcopy(tmp))
+
+	def fetch_value_from_xpath(self, file_path, xpath):
+
+		obj = et.parse(file_path)
+		xpath = re.sub('_', '/', xpath)
+
+		elem = obj.find(xpath)
+
+		if elem != None:
+			return elem.text
+		else:
+			return None
+
+	def check_multiple_cond(self, name, cond, macro):
+
+		ret = False
+
+		split = cond.split('||')
+		if len(split) > 1:
+			for s in split:
+				s = re.sub(' ', '', s)
+				ret =  ret | self.check_cond(name, s, macro)
+		else:
+			ret = self.check_cond(name, cond, macro)
+
+		return ret
+
+
+	def check_cond(self, name, cond, macro):
+
+		param = ''
+		result = ''
+		model = macro['model']
+
+		tmp = re.sub("'", "", cond)
+
+		m = re.match('(.*)\sin\s(.*)', tmp)
+		if m:
+			match = m.group(1)
+			param = m.group(2)	
+			
+
+		m = re.match('(.*)=(.*)', tmp)
+		if m:
+			param = m.group(1)	
+			match = m.group(2)
+
+
+		flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
+		cdf_path = os.path.join(flash_base, model, 'etc', 'CDF.xml')
+		prefix_etc_path = os.path.join(flash_base, model)
+
+		value = fetch_value_from_configer(cdf_path, prefix_etc_path, param)
+
+		if debug:
+			print '---------------------------------'
+			print cdf_path
+			print prefix_etc_path
+			print model 
+			print 'name:%s' % name
+			print 'param:%s' % param 
+			print 'value:%s' % value 
+			print 'match:%s' % match 
+			print '---------------------------------'
+
+
+		# if the value is None, it means that the param is not maintained by configer
+		# it would be CAMERA_MODEL, CAMERA_TYPE... 
+		if value == None:
+			for m in macro['content']:
+				if m['name'] == param and m['value'] == match:
+					return True
+					
+
+		if match == value:
+			return True
+		elif value != None and match in value:
+			return True
+		else:
+			return False
+
+
+	def handle_detail_common_rule(self, macro, content, index):
+
+		rules = content['rule']
+		name = content['param']
+
+		for rule in rules:
+
+			if debug:
+				print '\n'
+
+			m = self.check_multiple_cond(name, rule['cond'], macro)
+			if m:
+				macro['content'][index]['value'] = rule['value']
+				if debug:
+					print json.dumps(macro, indent=4, sort_keys=True)
+				break
+
+	def compose_list_in_dict(self, names):
+		listp = []
+		dictp = {}
+		for name in names:
+			dictp['name'] = name 
+			dictp['value'] = None
+			listp.append(deepcopy(dictp))	
+
+		return deepcopy(listp)
+
+	def parse_common_rule(self):
+		data = open(self.common_rule).read()  
+		jdata = json.loads(data)
+
+		if not jdata.has_key('name') and not jdata.has_key('content'):
+			error_msg()
+
+		# following is composing the self.macro 
+		# which contains all the information we need 
+
+		self.fetch_models()
+
+		for m in self.macro:
+			m['content'] = self.compose_list_in_dict(jdata['name'])
+			for content in jdata['content']:
+				# the index is for self.macro[model]['content'][index]
+				# and it would be used after the condition is matched
+				index = jdata['content'].index(content)
+
+				self.handle_detail_common_rule(m, content, index)
+
+
+		print json.dumps(self.macro, indent=4, sort_keys=True)
+
+	def parse_api_rule(self):
+		data = open(self.api_rule).read()  
 		jdata = json.loads(data)
 
 		if not jdata.has_key('version') and not jdata.has_key('content'):
