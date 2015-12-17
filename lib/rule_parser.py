@@ -32,10 +32,13 @@ class base(object):
 	xpaths = []
 	cdf_check = ''
 	do_list = []
+	macro = []
 
-	def __init__(self, action):
+	def __init__(self, action, macro):
 		self.confile = action['file']
 		self.method = action['method']
+		self.macro = macro
+
 		self.locate_config(action)
 		self.parse(action)
 
@@ -72,6 +75,24 @@ class base(object):
 
 				index = rule_path.index(path)
 				detail[index]["s<n>"] = elem.text 
+
+	def check_cond(self, cond, model):
+		macro = self.macro
+
+		m = re.match('(.*)=(.*)', cond)
+		if m:
+			param = m.group(1)	
+			match = m.group(2)
+		else:
+			param = match = None
+
+		# seach macro
+		for mac in macro:
+			if model == mac['model']:
+				for content in mac['content']:
+					if content['name'] == param and content['value'] == match:
+						return True
+		return False
 
 	def gen_param(self, xpath, rule_element, rule_action):
 
@@ -157,6 +178,21 @@ class base(object):
 			print 'param: %s' % self.xpath
 			print '-----------------------------------------------'
 
+	def compose_dict_in_list(self, paths):
+		listp = []
+		dictp = {}
+		for path in paths:
+			m = re.search('.*/([A-Z][A-Z][0-9A-Z]+)/.*', path)
+			if m:
+				dictp['model'] = m.group(1)
+			else:
+				dictp['model'] = None
+
+			dictp['xpath'] = [] 
+			listp.append(deepcopy(dictp))	
+
+		return deepcopy(listp)
+
 	def parse(self, rule_action):
 
 		rule_element = rule_action['element']
@@ -164,11 +200,8 @@ class base(object):
 		for element in rule_element:
 			xpath = element['param']
 
-			# initial a new key as metadata
-			detail = element['detail'] = [] 
-			tmp = {"xpath":[]}
-			for p in rule_action['path']:
-				detail.append(deepcopy(tmp))
+			# initial 'detail' as metadata
+			element['detail'] = self.compose_dict_in_list(rule_action['path'])
 
 
 			m = re.search('<.*>', xpath)
@@ -200,6 +233,9 @@ class add(base):
 				index = paths.index(path)
 				detail = element['detail'][index]
 				xpaths = detail['xpath']
+				model = detail['model']
+				if element.has_key('cond') and not self.check_cond(element['cond'], model): 
+					continue
 
 				et_new_node = self.insert_new_xpath(et_object, xpaths, element)	
 
@@ -453,19 +489,8 @@ class api_version_object(object):
 				tmp['model'] = m.group(1) 
 			self.macro.append(deepcopy(tmp))
 
-	def fetch_value_from_xpath(self, file_path, xpath):
 
-		obj = et.parse(file_path)
-		xpath = re.sub('_', '/', xpath)
-
-		elem = obj.find(xpath)
-
-		if elem != None:
-			return elem.text
-		else:
-			return None
-
-	def check_multiple_cond(self, name, cond, macro):
+	def check_rule_multiple_cond(self, name, cond, macro):
 
 		ret = False
 
@@ -473,14 +498,14 @@ class api_version_object(object):
 		if len(split) > 1:
 			for s in split:
 				s = re.sub(' ', '', s)
-				ret =  ret | self.check_cond(name, s, macro)
+				ret =  ret | self.check_rule_cond(name, s, macro)
 		else:
-			ret = self.check_cond(name, cond, macro)
+			ret = self.check_rule_cond(name, cond, macro)
 
 		return ret
 
 
-	def check_cond(self, name, cond, macro):
+	def check_rule_cond(self, name, cond, macro):
 
 		param = ''
 		result = ''
@@ -544,14 +569,14 @@ class api_version_object(object):
 			if debug:
 				print '\n'
 
-			m = self.check_multiple_cond(name, rule['cond'], macro)
+			m = self.check_rule_multiple_cond(name, rule['cond'], macro)
 			if m:
 				macro['content'][index]['value'] = rule['value']
 				if debug:
 					print json.dumps(macro, indent=4, sort_keys=True)
 				break
 
-	def compose_list_in_dict(self, names):
+	def compose_dict_in_list(self, names):
 		listp = []
 		dictp = {}
 		for name in names:
@@ -574,7 +599,7 @@ class api_version_object(object):
 		self.fetch_models()
 
 		for m in self.macro:
-			m['content'] = self.compose_list_in_dict(jdata['name'])
+			m['content'] = self.compose_dict_in_list(jdata['name'])
 			for content in jdata['content']:
 				# the index is for self.macro[model]['content'][index]
 				# and it would be used after the condition is matched

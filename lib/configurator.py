@@ -21,21 +21,21 @@ def output(filename, content):
 
 	outh.write(content)
 
-def action_dispatch(action, md):
-	obj = md(action)
+def action_dispatch(action, md, macro):
+	obj = md(action, macro)
 	ret = obj.action(action)
 	if ret:
 		print 'Modify successfully!\n'
 
-def update_config(actions):
+def update_config(actions, macro):
 
 	for action in actions:
 		if action['method'] == 'add':
-			action_dispatch(action, add)
+			action_dispatch(action, add, macro)
 		elif action['method'] == 'remove':
-			action_dispatch(action, remove)
+			action_dispatch(action, remove, macro)
 		elif action['method'] == 'modify':
-			action_dispatch(action, modify)
+			action_dispatch(action, modify, macro)
 
 def check_envs():
 	if not os.getenv('PRODUCTDIR'):
@@ -50,10 +50,11 @@ if __name__ == '__main__':
 		print 'Have you source the project devel file?'
 		sys.exit(1)
 
-	obj = api_version_object('test.json') 
-	obj.parse_rule()
+	obj = api_version_object('0301c.json') 
+	obj.parse_common_rule()
+	obj.parse_api_rule()
 
-	update_config(obj.actions)
+	update_config(obj.actions, obj.macro)
 
 
 # vim: tabstop=8 shiftwidth=8 softtabstop=8 noexpandtab
