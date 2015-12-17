@@ -51,7 +51,15 @@ if __name__ == '__main__':
 		sys.exit(1)
 
 	obj = api_version_object('0301c.json') 
+
+	print '#############################################'
+	print 'Begin to parse rule.json'
+	print '#############################################'
 	obj.parse_common_rule()
+
+	print '#############################################'
+	print 'Begin to update CDF/configs'
+	print '#############################################'
 	obj.parse_api_rule()
 
 	update_config(obj.actions, obj.macro)

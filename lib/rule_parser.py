@@ -21,7 +21,6 @@ debug = True
 class base(object):
 	# config file path
 	conf_path = []
-	conf_nmediastream = []
 
 	# xml related
 	et_object = None
@@ -40,7 +39,7 @@ class base(object):
 		self.macro = macro
 
 		self.locate_config(action)
-		self.parse(action)
+		self.compose_detail(action)
 
 		print json.dumps(action, indent=4, sort_keys=True)
 
@@ -56,45 +55,42 @@ class base(object):
 
 		rule_action['path'] = deepcopy(tmp) #deepcopy is the trick to copy by value
 
-	def fetch_nmediastream(self, rule_element, rule_action):
+	def compose_detail(self, rule_action):
 
-		capability = 'config_capability.xml'
-		xpath = 'capability/nmediastream'
+		rule_element = rule_action['element']
 
-		rule_path = rule_action['path']
-		detail = rule_element['detail'] 
+		for element in rule_element:
+			xpath = element['param']
 
-		for path in rule_path:
-			dirname = os.path.dirname(path)
-			caps = subprocess.Popen('find %s -iname %s' % (dirname, capability), shell=True, stdout = subprocess.PIPE).stdout
-			for cap in caps:
-				cap = re.sub('\n', '', cap)
-				et_object = et.parse(cap)
-				elem = et_object.find(xpath)
-				#self.conf_nmediastream.append(elem.text)
+			# initial 'detail' as metadata
+			# which is a list of all the models and each of them contains the real param info
+			element['detail'] = self.compose_dict_in_list(rule_action['path'])
 
-				index = rule_path.index(path)
-				detail[index]["s<n>"] = elem.text 
+			m = re.search('<.*>', xpath)
+			if m:
+				self.evaluate_param(xpath, element, rule_action)
+			else:
+				for de in element['detail']:
+					de['xpath'].append(xpath)
 
-	def check_cond(self, cond, model):
-		macro = self.macro
+	def compose_dict_in_list(self, paths):
+		listp = []
+		dictp = {}
+		for path in paths:
+			m = re.search('.*/([A-Z][A-Z][0-9A-Z]+)/.*', path)
+			if m:
+				dictp['model'] = m.group(1)
+			else:
+				dictp['model'] = None
 
-		m = re.match('(.*)=(.*)', cond)
-		if m:
-			param = m.group(1)	
-			match = m.group(2)
-		else:
-			param = match = None
+			dictp['xpath'] = [] 
+			dictp['path'] = path
+			listp.append(deepcopy(dictp))	
 
-		# seach macro
-		for mac in macro:
-			if model == mac['model']:
-				for content in mac['content']:
-					if content['name'] == param and content['value'] == match:
-						return True
-		return False
+		return deepcopy(listp)
 
-	def gen_param(self, xpath, rule_element, rule_action):
+
+	def evaluate_param(self, xpath, rule_element, rule_action):
 
 		# find c<n>, s<n> or <..> 
 		# and replace the variable with real number/value
@@ -115,7 +111,7 @@ class base(object):
 					value = re.sub(pattern, 'c0', xpath)
 					de['xpath'].append(value)
 
-				else:
+				else: # 'xpath' is not null 
 					tmp = []
 					for param in de['xpath']:
 						value = re.sub(pattern, 'c0', param)
@@ -125,7 +121,7 @@ class base(object):
 
 		prog = re.compile('s<n>')
 		patterns1 = prog.findall(xpath)
-		self.fetch_nmediastream(rule_element, rule_action)
+		self.find_stream_number(rule_element, rule_action)
 		if len(patterns1) > 0:
 			pattern = patterns1[0]
 
@@ -135,7 +131,7 @@ class base(object):
 						value = re.sub(pattern, 's%d' % i, xpath)
 						de['xpath'].append(value)
 
-				else:
+				else: # 'xpath' is not null 
 					tmp = []
 					for param in de['xpath']:
 						for i in range(0, int(de[pattern])):
@@ -143,6 +139,45 @@ class base(object):
 							tmp.append(value)
 					de['xpath'] = deepcopy(tmp)
 
+
+	def find_stream_number(self, rule_element, rule_action):
+
+		capability = 'config_capability.xml'
+		xpath = 'capability/nmediastream'
+
+		rule_path = rule_action['path']
+		detail = rule_element['detail'] 
+
+		for path in rule_path:
+			dirname = os.path.dirname(path)
+			caps = subprocess.Popen('find %s -iname %s' % (dirname, capability), shell=True, stdout = subprocess.PIPE).stdout
+			for cap in caps:
+				cap = re.sub('\n', '', cap)
+				et_object = et.parse(cap)
+				elem = et_object.find(xpath)
+
+				index = rule_path.index(path)
+				detail[index]["s<n>"] = elem.text 
+
+		# todo: it can use configer to get value too
+
+	def check_cond(self, cond, model):
+		macro = self.macro
+
+		m = re.match('(.*)=(.*)', cond)
+		if m:
+			param = m.group(1)	
+			match = m.group(2)
+		else:
+			param = match = None
+
+		# seach macro
+		for mac in macro:
+			if model == mac['model']:
+				for content in mac['content']:
+					if content['name'] == param and content['value'] == match:
+						return True
+		return False
 
 	def prettify(self, elem):
 		"""Return a pretty-printed XML string for the Element."""
@@ -169,57 +204,16 @@ class base(object):
 
 		outh.write(content)
 
-	def debug_print(self):
+	def find_index(self, target_list, aim):
+		for target in target_list:
+			if target['path'] == aim:
+				return target_list.index(target)
 
-		if debug:
-			print '\n'
-			print '-----------------------------------------------'
-			print 'action: %s' % self.method
-			print 'param: %s' % self.xpath
-			print '-----------------------------------------------'
-
-	def compose_dict_in_list(self, paths):
-		listp = []
-		dictp = {}
-		for path in paths:
-			m = re.search('.*/([A-Z][A-Z][0-9A-Z]+)/.*', path)
-			if m:
-				dictp['model'] = m.group(1)
-			else:
-				dictp['model'] = None
-
-			dictp['xpath'] = [] 
-			listp.append(deepcopy(dictp))	
-
-		return deepcopy(listp)
-
-	def parse(self, rule_action):
-
-		rule_element = rule_action['element']
-
-		for element in rule_element:
-			xpath = element['param']
-
-			# initial 'detail' as metadata
-			element['detail'] = self.compose_dict_in_list(rule_action['path'])
-
-
-			m = re.search('<.*>', xpath)
-			if m:
-				self.gen_param(xpath, element, rule_action)
-			else:
-				for de in element['detail']:
-					de['xpath'].append(xpath)
-
-class add(base):
-	""" Add the tag into XML """
+		return None
 
 	def action(self, rule_action):
 
 		stain = False 
-		et_new_node = None
-
-		#self.debug_print()
 
 		paths = rule_action['path']
 		elements = rule_action['element']
@@ -230,28 +224,48 @@ class add(base):
 			et_root = et_object.getroot()
 
 			for element in elements:
-				index = paths.index(path)
-				detail = element['detail'][index]
-				xpaths = detail['xpath']
-				model = detail['model']
+				index = self.find_index(element['detail'], path) 
+
+				if index != None:
+					detail = element['detail'][index]
+					xpaths = detail['xpath']
+					model = detail['model']
+				else:
+					continue
+
 				if element.has_key('cond') and not self.check_cond(element['cond'], model): 
 					continue
 
-				et_new_node = self.insert_new_xpath(et_object, xpaths, element)	
-
-				if et_new_node != None:
-					stain =True
+				stain = self.detail_action(et_object, xpaths, element)
 
 			if stain:
 				content = self.prettify(et_root)
 				self.output(path, content)
-			else:
-				print 'The param is already in the %s' % path
+			#else:
+				#print 'The param is exist or absent. Please check yourself.'
 
 		if stain:
 			return True 
 		else:
 			return False 
+
+	def detail_action(self, et_object, xpaths, rule_element): 
+		# overwrite it	
+
+		return None 
+
+
+class add(base):
+	""" Add the tag into XML """
+
+	def detail_action(self, et_object, xpaths, rule_element):
+		et_new_node =  self.insert_new_xpath(et_object, xpaths, rule_element)
+
+		if et_new_node != None:
+			return True
+		else:
+			print '\'%s\' exists already !\n' % rule_element['param']
+			return False
 
 	def insert_new_xpath(self, et_object, xpaths, rule_element):
 
@@ -302,6 +316,15 @@ class add(base):
 class remove(base):
 	""" Remove the tag from XML """
 
+	def detail_action(self, et_object, xpaths, rule_element):
+		ret =  self.remove_xpath(et_object, xpaths)
+
+		if ret:
+			return True
+		else:
+			print '\'%s\' does not exist !\n' % rule_element['param']
+			return False
+
 	def remove_xpath(self, et_object, xpaths):
 
 		ret = False
@@ -316,82 +339,27 @@ class remove(base):
 					ret = True
 		return ret
 
-	def action(self, rule_action):
-
-		stain = False 
-
-		#self.debug_print()
-
-		paths = rule_action['path']
-		elements = rule_action['element']
-
-		for path in paths:
-			print path
-			et_object = et.parse(path, CommentedTreeBuilder())
-			et_root = et_object.getroot()
-
-			for element in elements:
-				index = paths.index(path)
-				detail = element['detail'][index]
-				xpaths = detail['xpath']
-
-				ret = self.remove_xpath(et_object, xpaths)	
-
-			if ret:
-				content = self.prettify(et_root)
-				self.output(path, content)
-				stain = True
-			else:
-				print 'The param is not in the %s' % path
-
-		if stain:
-			return True 
-		else:
-			return False 
 
 
 class modify(base):
 	""" Modify the XML tag content """
 
-	def action(self, rule_action):
+	def detail_action(self, et_object, xpaths, rule_element):
+		stain = False
 
-		stain = False 
-		et_new_node = None
+		for xpath in xpaths:
+			xpath = re.sub('_', '/', xpath)
+			et_target_tag = et_object.find(xpath)
 
-		#self.debug_print()
+			if et_target_tag is not None:
+				et_target_tag.text = str(rule_element['value']) 
+				#et_target_tag.set('update', 'yes')
+				stain = True
 
-		paths = rule_action['path']
-		elements = rule_action['element']
+		if not stain:
+			print '\'%s\' does not exist !\n' % rule_element['param']
 
-		for path in paths:
-			print path
-			et_object = et.parse(path, CommentedTreeBuilder())
-			et_root = et_object.getroot()
-
-			for element in elements:
-				index = paths.index(path)
-				detail = element['detail'][index]
-				xpaths = detail['xpath']
-
-				for xpath in xpaths:
-					xpath = re.sub('_', '/', xpath)
-					et_target_tag = et_object.find(xpath)
-
-					if et_target_tag is not None:
-						et_target_tag.text = str(element['value']) 
-						#et_target_tag.set('update', 'yes')
-						stain = True
-
-			if stain:
-				content = self.prettify(et_root)
-				self.output(path, content)
-			else:
-				print 'The param is not in the %s' % path
-
-		if stain:
-			return True 
-		else:
-			return False 
+		return stain
 
 
 class api_version_object(object): 
