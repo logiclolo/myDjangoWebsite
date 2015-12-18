@@ -19,150 +19,104 @@ else:
 debug = True
 
 class base(object):
-	# config file path
-	conf_path = []
-
-	# xml related
-	et_object = None
-	et_root = None
 	confile = ''
 	method = ''
-	xpath = ''
-	xpaths = []
-	cdf_check = ''
-	do_list = []
-	macro = []
+	matrix_action = {} 
+	matrix_contents = []
+	matrix_model = ''
 
-	def __init__(self, action, macro):
+	def __init__(self, action, matrix):
 		self.confile = action['file']
 		self.method = action['method']
-		self.macro = macro
+		self.matrix_action = action
+		self.matrix_contents = matrix['content'] 
+		self.matrix_model = matrix['model'] 
 
-		self.locate_config(action)
-		self.compose_detail(action)
+		self.locate_config()
+		self.compose_detail_action()
 
-		print json.dumps(action, indent=4, sort_keys=True)
+		#print json.dumps(action, indent=4, sort_keys=True)
 
-	def locate_config(self, rule_action):
+	def locate_config(self):
 
-		tmp = []
+		directory = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base', self.matrix_model)  
+		path = subprocess.Popen('find %s -iname %s' % (directory, self.confile), shell=True, stdout = subprocess.PIPE).stdout
+		for p in path: 	
+			p = re.sub('\n', '', p)
+			self.matrix_action['path'] = p
 
-		flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
-		dirs = subprocess.Popen('find %s -iname %s' % (flash_base, self.confile), shell=True, stdout = subprocess.PIPE).stdout
-		for d in dirs: 	
-			d = re.sub('\n', '', d)
-			tmp.append(d) 
 
-		rule_action['path'] = deepcopy(tmp) #deepcopy is the trick to copy by value
+	def compose_detail_action(self):
 
-	def compose_detail(self, rule_action):
+		elements = self.matrix_action['element'] 
 
-		rule_element = rule_action['element']
-
-		for element in rule_element:
+		for element in elements:
 			xpath = element['param']
-
-			# initial 'detail' as metadata
-			# which is a list of all the models and each of them contains the real param info
-			element['detail'] = self.compose_dict_in_list(rule_action['path'])
-
 			m = re.search('<.*>', xpath)
 			if m:
-				self.evaluate_param(xpath, element, rule_action)
+				self.evaluate_param(element)
 			else:
 				for de in element['detail']:
 					de['xpath'].append(xpath)
 
-	def compose_dict_in_list(self, paths):
-		listp = []
-		dictp = {}
-		for path in paths:
-			m = re.search('.*/([A-Z][A-Z][0-9A-Z]+)/.*', path)
-			if m:
-				dictp['model'] = m.group(1)
-			else:
-				dictp['model'] = None
-
-			dictp['xpath'] = [] 
-			dictp['path'] = path
-			listp.append(deepcopy(dictp))	
-
-		return deepcopy(listp)
-
-
-	def evaluate_param(self, xpath, rule_element, rule_action):
+	def evaluate_param(self, element):
 
 		# find c<n>, s<n> or <..> 
 		# and replace the variable with real number/value
 		#
 		#
-		# The final result is saved to rule_action['detail']  
+		# The final result is saved to element['xpath']  
 		# and after that self.action() would use these detail
 
-		rule_detail = rule_element['detail']
+		element['xpath'] = [] 
+		element['xpath'].append(deepcopy(element['param']))
 
 		prog = re.compile('c<n>')
-		patterns = prog.findall(xpath)
+		patterns = prog.findall(element['param'])
 		if len(patterns) > 0:
 			pattern = patterns[0]
 
-			for de in rule_detail:	
-				if len(de['xpath']) == 0:
-					value = re.sub(pattern, 'c0', xpath)
-					de['xpath'].append(value)
-
-				else: # 'xpath' is not null 
-					tmp = []
-					for param in de['xpath']:
-						value = re.sub(pattern, 'c0', param)
-						tmp.append(value)
-					de['xpath'] = deepcopy(tmp)
+			tmp = []
+			for x in element['xpath']:
+				value = re.sub(pattern, 'c0', x)
+				tmp.append(value)
+			element['xpath'] = deepcopy(tmp)
 
 
 		prog = re.compile('s<n>')
-		patterns1 = prog.findall(xpath)
-		self.find_stream_number(rule_element, rule_action)
-		if len(patterns1) > 0:
-			pattern = patterns1[0]
+		patterns = prog.findall(element['param'])
+		if len(patterns) > 0:
+			self.find_stream_number(element)
+			pattern = patterns[0]
 
-			for de in rule_detail:	
-				if len(de['xpath']) == 0:
-					for i in range(0, int(de[pattern])):
-						value = re.sub(pattern, 's%d' % i, xpath)
-						de['xpath'].append(value)
-
-				else: # 'xpath' is not null 
-					tmp = []
-					for param in de['xpath']:
-						for i in range(0, int(de[pattern])):
-							value = re.sub(pattern, 's%d' % i, param)
-							tmp.append(value)
-					de['xpath'] = deepcopy(tmp)
+			number = int(element[pattern]) 
+			tmp = []
+			for x in element['xpath']:
+				for i in range(0, number):
+					value = re.sub(pattern, 's%d' % i, x)
+					tmp.append(value)
+			element['xpath'] = deepcopy(tmp)
 
 
-	def find_stream_number(self, rule_element, rule_action):
+	def find_stream_number(self, element):
 
 		capability = 'config_capability.xml'
 		xpath = 'capability/nmediastream'
 
-		rule_path = rule_action['path']
-		detail = rule_element['detail'] 
+		path = self.matrix_action['path']
+		dirname = os.path.dirname(path)
+		caps = subprocess.Popen('find %s -iname %s' % (dirname, capability), shell=True, stdout = subprocess.PIPE).stdout
+		for cap in caps:
+			cap = re.sub('\n', '', cap)
+			et_object = et.parse(cap)
+			elem = et_object.find(xpath)
 
-		for path in rule_path:
-			dirname = os.path.dirname(path)
-			caps = subprocess.Popen('find %s -iname %s' % (dirname, capability), shell=True, stdout = subprocess.PIPE).stdout
-			for cap in caps:
-				cap = re.sub('\n', '', cap)
-				et_object = et.parse(cap)
-				elem = et_object.find(xpath)
-
-				index = rule_path.index(path)
-				detail[index]["s<n>"] = elem.text 
+			element['s<n>'] = elem.text
 
 		# todo: it can use configer to get value too
 
-	def check_cond(self, cond, model):
-		macro = self.macro
+
+	def check_cond(self, cond):
 
 		m = re.match('(.*)=(.*)', cond)
 		if m:
@@ -171,12 +125,10 @@ class base(object):
 		else:
 			param = match = None
 
-		# seach macro
-		for mac in macro:
-			if model == mac['model']:
-				for content in mac['content']:
-					if content['name'] == param and content['value'] == match:
-						return True
+		for content in self.matrix_contents:
+			if content['name'] == param and content['value'] == match:
+				return True
+
 		return False
 
 	def prettify(self, elem):
@@ -211,45 +163,36 @@ class base(object):
 
 		return None
 
-	def action(self, rule_action):
+	def action(self):
 
 		stain = False 
 
-		paths = rule_action['path']
-		elements = rule_action['element']
+		path = self.matrix_action['path']
+		elements = self.matrix_action['element']
 
-		for path in paths:
-			print path
-			et_object = et.parse(path, CommentedTreeBuilder())
-			et_root = et_object.getroot()
+		et_object = et.parse(path, CommentedTreeBuilder())
+		et_root = et_object.getroot()
 
-			for element in elements:
-				index = self.find_index(element['detail'], path) 
+		print path
+		for element in elements:
+			if element.has_key('cond') and not self.check_cond(element['cond']): 
+				continue
 
-				if index != None:
-					detail = element['detail'][index]
-					xpaths = detail['xpath']
-					model = detail['model']
-				else:
-					continue
+			stain = self.detail_action(et_object, element)
 
-				if element.has_key('cond') and not self.check_cond(element['cond'], model): 
-					continue
-
-				stain = self.detail_action(et_object, xpaths, element)
-
-			if stain:
-				content = self.prettify(et_root)
-				self.output(path, content)
-			#else:
-				#print 'The param is exist or absent. Please check yourself.'
+		if stain:
+			content = self.prettify(et_root)
+			self.output(path, content)
+		#else:
+			#print 'The param is exist or absent. Please check yourself.'
 
 		if stain:
 			return True 
 		else:
 			return False 
 
-	def detail_action(self, et_object, xpaths, rule_element): 
+
+	def detail_action(self, et_object, xpaths, element): 
 		# overwrite it	
 
 		return None 
@@ -258,19 +201,20 @@ class base(object):
 class add(base):
 	""" Add the tag into XML """
 
-	def detail_action(self, et_object, xpaths, rule_element):
-		et_new_node =  self.insert_new_xpath(et_object, xpaths, rule_element)
+	def detail_action(self, et_object, element):
+		et_new_node =  self.insert_new_xpath(et_object, element)
 
 		if et_new_node != None:
 			return True
 		else:
-			print '\'%s\' exists already !\n' % rule_element['param']
+			print '\'%s\' exists already !\n' % element['param']
 			return False
 
-	def insert_new_xpath(self, et_object, xpaths, rule_element):
+	def insert_new_xpath(self, et_object, element):
 
 		et_new_node = None
 		et_ori_object = et_object
+		xpaths = element['xpath']
 
 		for xpath in xpaths: 
 			# travel every element of the given xpath
@@ -284,8 +228,8 @@ class add(base):
 
 					# the last element in the xpath may have <check> or <value>
 					if  node == trace[-1]:
-						if rule_element.has_key('value'):
-							value = str(rule_element['value'])
+						if element.has_key('value'):
+							value = str(element['value'])
 							m = re.match('\?(.*)', value)
 							if m:
 								# default value
@@ -295,8 +239,8 @@ class add(base):
 							else:
 								et_new_node.text = value 
 
-						if rule_element.has_key('check'):
-							check = rule_element['check']
+						if element.has_key('check'):
+							check = element['check']
 							if check != None and check != 'null':
 								et_new_check_node = et.Element('check')
 								et_new_check_node.text = str(check)
@@ -316,18 +260,20 @@ class add(base):
 class remove(base):
 	""" Remove the tag from XML """
 
-	def detail_action(self, et_object, xpaths, rule_element):
-		ret =  self.remove_xpath(et_object, xpaths)
+	def detail_action(self, et_object, element):
+		ret =  self.remove_xpath(et_object, element)
 
 		if ret:
 			return True
 		else:
-			print '\'%s\' does not exist !\n' % rule_element['param']
+			print '\'%s\' does not exist !\n' % element['param']
 			return False
 
-	def remove_xpath(self, et_object, xpaths):
+	def remove_xpath(self, et_object, element):
 
 		ret = False
+		xpaths = element['xpath']
+
 		for xpath in xpaths: 
 			xpath = re.sub('_', '/', xpath)
 			m = re.match('(.*)/(.*)$', xpath)
@@ -344,20 +290,22 @@ class remove(base):
 class modify(base):
 	""" Modify the XML tag content """
 
-	def detail_action(self, et_object, xpaths, rule_element):
+	def detail_action(self, et_object, element):
 		stain = False
+
+		xpaths = element['xpath']
 
 		for xpath in xpaths:
 			xpath = re.sub('_', '/', xpath)
 			et_target_tag = et_object.find(xpath)
 
 			if et_target_tag is not None:
-				et_target_tag.text = str(rule_element['value']) 
+				et_target_tag.text = str(element['value']) 
 				#et_target_tag.set('update', 'yes')
 				stain = True
 
 		if not stain:
-			print '\'%s\' does not exist !\n' % rule_element['param']
+			print '\'%s\' does not exist !\n' % element['param']
 
 		return stain
 
@@ -366,21 +314,22 @@ class api_version_object(object):
 	version = '' 
 	api_rule = ''
 	common_rule = ''
-	spec_content = [] 
 	actions = []
 	config_path = []
-	macro = [] 
+	matrix = [] 
 
 	def __init__(self, path):
 		self.api_rule = path
 		self.common_rule = 'rule.json'
+
+		self.initial_matrix()
 
 	def error_msg(self):
 		print 'The format of rule is wrong!'
 		sys.exit(1)
 
 	def check_cond(self, cond, ques):
-		print '[check condition] %s' % cond
+		#print '[check condition] %s' % cond
 		if cond == True:
 			return True
 		
@@ -428,10 +377,11 @@ class api_version_object(object):
 			return False
 		
 
-	def ask_user(self, question):
+	def ask_user(self, question, model):
 		if self.check_cond(question['cond'], None):
 			ques = question['ask']
 
+			print '\nPlease answer the questions based on \'%s\' ...' % model
 			print ques 
 			ans = raw_input()
 			while not self.check_answer(ques, ans):
@@ -439,11 +389,16 @@ class api_version_object(object):
 			
 			question['ans'] = ans
 
-	def fetch_models(self):
-		# Find numbers of model 
+	def initial_matrix(self):
+
+		# The matrix contains the main infomation that we need
+		# and note that the length of matrix is 'numbers of model'
 		#
+		# (1) Find numbers of model 
 		# Use config_capability.xml to find models, 
-		# and save the result in self.macro
+		#
+		# (2) action list
+		# We initial the list first and it would be assigned after
 
 		tmp = {} 
 		capability = 'config_capability.xml'
@@ -455,10 +410,12 @@ class api_version_object(object):
 			m = re.search('.*/([A-Z][A-Z][0-9A-Z]+)/.*', d)
 			if m:
 				tmp['model'] = m.group(1) 
-			self.macro.append(deepcopy(tmp))
 
+			tmp['action'] = [] 
+			tmp['content'] = [] 
+			self.matrix.append(deepcopy(tmp))
 
-	def check_rule_multiple_cond(self, name, cond, macro):
+	def check_rule_multiple_cond(self, name, cond, matrix):
 
 		ret = False
 
@@ -466,18 +423,18 @@ class api_version_object(object):
 		if len(split) > 1:
 			for s in split:
 				s = re.sub(' ', '', s)
-				ret =  ret | self.check_rule_cond(name, s, macro)
+				ret =  ret | self.check_rule_cond(name, s, matrix)
 		else:
-			ret = self.check_rule_cond(name, cond, macro)
+			ret = self.check_rule_cond(name, cond, matrix)
 
 		return ret
 
 
-	def check_rule_cond(self, name, cond, macro):
+	def check_rule_cond(self, name, cond, matrix):
 
 		param = ''
 		result = ''
-		model = macro['model']
+		model = matrix['model']
 
 		tmp = re.sub("'", "", cond)
 
@@ -514,7 +471,7 @@ class api_version_object(object):
 		# if the value is None, it means that the param is not maintained by configer
 		# it would be CAMERA_MODEL, CAMERA_TYPE... 
 		if value == None:
-			for m in macro['content']:
+			for m in matrix['content']:
 				if m['name'] == param and m['value'] == match:
 					return True
 					
@@ -527,7 +484,7 @@ class api_version_object(object):
 			return False
 
 
-	def handle_detail_common_rule(self, macro, content, index):
+	def handle_detail_common_rule(self, matrix, content, index):
 
 		rules = content['rule']
 		name = content['param']
@@ -537,11 +494,12 @@ class api_version_object(object):
 			if debug:
 				print '\n'
 
-			m = self.check_rule_multiple_cond(name, rule['cond'], macro)
+			m = self.check_rule_multiple_cond(name, rule['cond'], matrix)
 			if m:
-				macro['content'][index]['value'] = rule['value']
+				matrix['content'][index]['value'] = rule['value']
 				if debug:
-					print json.dumps(macro, indent=4, sort_keys=True)
+					print 'match!'
+					print json.dumps(matrix, indent=4, sort_keys=True)
 				break
 
 	def compose_dict_in_list(self, names):
@@ -561,22 +519,19 @@ class api_version_object(object):
 		if not jdata.has_key('name') and not jdata.has_key('content'):
 			error_msg()
 
-		# following is composing the self.macro 
-		# which contains all the information we need 
-
-		self.fetch_models()
-
-		for m in self.macro:
+		# parse rule.json and save the info to matrix 
+		for m in self.matrix:
 			m['content'] = self.compose_dict_in_list(jdata['name'])
 			for content in jdata['content']:
-				# the index is for self.macro[model]['content'][index]
+				# the index is for self.matrix[model]['content'][index]
 				# and it would be used after the condition is matched
 				index = jdata['content'].index(content)
 
 				self.handle_detail_common_rule(m, content, index)
 
 
-		print json.dumps(self.macro, indent=4, sort_keys=True)
+		print '\n\n'
+		print json.dumps(self.matrix, indent=4, sort_keys=True)
 
 	def parse_api_rule(self):
 		data = open(self.api_rule).read()  
@@ -588,22 +543,31 @@ class api_version_object(object):
 		self.version = jdata['version']
 		content = jdata['content']
 		specs = jdata['content']['spec']
-		self.spec_content = specs
+
+		# compose the self.matrix 
+		# which contains all the information we need 
+
+		for m in self.matrix:
+			self.parse_detail_api_rule(m, specs)
+
+		print json.dumps(self.matrix, indent=4, sort_keys=True)
+
+	def parse_detail_api_rule(self, matrix, specs):
 
 		for spec in specs:
 			questions = spec['ques']
 			tasks = spec['task']
-			#print spec['type']
 
 			for question in questions: 
-				self.ask_user(question)
-				#print question['ans']
+				self.ask_user(question, matrix['model'])
 
 			for task in tasks: 
 				if self.check_cond(task['cond'], questions):
-					print '%s is match' % task['cond'] 
-					self.actions = self.actions + task['action'] 
+					print task['cond']
+					print 'match'
+					matrix['action'] = matrix['action'] + task['action'] 
 				else:
+					print task['cond']
 					print 'not match'
 
 

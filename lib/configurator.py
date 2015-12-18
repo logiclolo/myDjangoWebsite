@@ -1,17 +1,8 @@
 #!/usr/bin/env python
 
 import sys, os
-import re 
 import json
-from pprint import pprint
-from xml.dom import minidom
-from lxml import etree
 from rule_parser import *
-
-if sys.version_info[:2] >= (2, 5):
-	import xml.etree.ElementTree as et 
-else:
-	import elementtree.ElementTree as et 
 
 def output(filename, content):
 	try:
@@ -21,21 +12,25 @@ def output(filename, content):
 
 	outh.write(content)
 
-def action_dispatch(action, md, macro):
-	obj = md(action, macro)
-	ret = obj.action(action)
-	if ret:
-		print 'Modify successfully!\n'
+def do_action(action, md, model_matrix):
+	obj = md(action, model_matrix)
+	ret = obj.action()
 
-def update_config(actions, macro):
+	return ret
 
-	for action in actions:
+def action_dispatch(model_matrix):
+	for action in model_matrix['action']:
 		if action['method'] == 'add':
-			action_dispatch(action, add, macro)
+			do_action(action, add, model_matrix)
 		elif action['method'] == 'remove':
-			action_dispatch(action, remove, macro)
+			do_action(action, remove, model_matrix)
 		elif action['method'] == 'modify':
-			action_dispatch(action, modify, macro)
+			do_action(action, modify, model_matrix)
+
+
+def update_config(matrix):
+	for model_matrix in matrix:
+		action_dispatch(model_matrix)
 
 def check_envs():
 	if not os.getenv('PRODUCTDIR'):
@@ -55,14 +50,14 @@ if __name__ == '__main__':
 	print '#############################################'
 	print 'Begin to parse rule.json'
 	print '#############################################'
-	obj.parse_common_rule()
+	#obj.parse_common_rule()
 
 	print '#############################################'
 	print 'Begin to update CDF/configs'
 	print '#############################################'
 	obj.parse_api_rule()
 
-	update_config(obj.actions, obj.macro)
+	update_config(obj.matrix)
 
 
 # vim: tabstop=8 shiftwidth=8 softtabstop=8 noexpandtab
