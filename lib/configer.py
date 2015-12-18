@@ -54,6 +54,7 @@ def fetch_value_from_configer(cdf_path, prefix_etc_path, param):
 		returncode = confclient.returncode
 		retry = retry - 1
 		if retry == 0:
+			stop_configer(configer)
 			return None
 		#time.sleep(1)
 

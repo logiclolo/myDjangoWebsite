@@ -35,15 +35,25 @@ class base(object):
 		self.locate_config()
 		self.compose_detail_action()
 
-		#print json.dumps(action, indent=4, sort_keys=True)
+		print json.dumps(self.matrix_action, indent=4, sort_keys=True)
 
 	def locate_config(self):
+
+		self.matrix_action['path'] = '' 
 
 		directory = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base', self.matrix_model)  
 		path = subprocess.Popen('find %s -iname %s' % (directory, self.confile), shell=True, stdout = subprocess.PIPE).stdout
 		for p in path: 	
 			p = re.sub('\n', '', p)
 			self.matrix_action['path'] = p
+
+		# the file could be in 'common'
+		if len(self.matrix_action['path']) == 0:
+			flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base', 'common')
+			path = subprocess.Popen('find %s -iname %s' % (flash_base, self.confile), shell=True, stdout = subprocess.PIPE).stdout
+			for p in path: 	
+				p = re.sub('\n', '', p)
+				self.matrix_action['path'] = p
 
 
 	def compose_detail_action(self):
@@ -170,10 +180,14 @@ class base(object):
 		path = self.matrix_action['path']
 		elements = self.matrix_action['element']
 
-		et_object = et.parse(path, CommentedTreeBuilder())
-		et_root = et_object.getroot()
+		if path != '':
+			print path
+			et_object = et.parse(path, CommentedTreeBuilder())
+			et_root = et_object.getroot()
+		else:
+			return False
 
-		print path
+
 		for element in elements:
 			if element.has_key('cond') and not self.check_cond(element['cond']): 
 				continue
@@ -300,7 +314,15 @@ class modify(base):
 			et_target_tag = et_object.find(xpath)
 
 			if et_target_tag is not None:
-				et_target_tag.text = str(element['value']) 
+
+				if element.has_key('value'):
+					et_target_tag.text = str(element['value']) 
+
+				if element.has_key('check'):
+					et_child_tag = et_target_tag.find('check')
+					if et_child_tag != None: 
+						et_child_tag.text = str(element['check'])
+
 				#et_target_tag.set('update', 'yes')
 				stain = True
 
@@ -328,7 +350,7 @@ class api_version_object(object):
 		print 'The format of rule is wrong!'
 		sys.exit(1)
 
-	def check_cond(self, cond, ques):
+	def check_cond1(self, cond, ques, content):
 		#print '[check condition] %s' % cond
 		if cond == True:
 			return True
@@ -377,8 +399,8 @@ class api_version_object(object):
 			return False
 		
 
-	def ask_user(self, question, model):
-		if self.check_cond(question['cond'], None):
+	def ask_user(self, question, matrix):
+		if self.check_cond(question['cond'], matrix):
 			ques = question['ask']
 
 			print '\nPlease answer the questions based on \'%s\' ...' % model
@@ -387,7 +409,11 @@ class api_version_object(object):
 			while not self.check_answer(ques, ans):
 				ans = raw_input()
 			
-			question['ans'] = ans
+			#question['ans'] = ans
+			qid = question['id']
+			matrix['answer'][qid] = ans
+		else:
+			print 'don\'t need to ask.'
 
 	def initial_matrix(self):
 
@@ -413,9 +439,10 @@ class api_version_object(object):
 
 			tmp['action'] = [] 
 			tmp['content'] = [] 
+			tmp['answer'] = []
 			self.matrix.append(deepcopy(tmp))
 
-	def check_rule_multiple_cond(self, name, cond, matrix):
+	def check_cond(self, cond, matrix):
 
 		ret = False
 
@@ -423,49 +450,72 @@ class api_version_object(object):
 		if len(split) > 1:
 			for s in split:
 				s = re.sub(' ', '', s)
-				ret =  ret | self.check_rule_cond(name, s, matrix)
+				ret =  ret | self.check_detail_cond(s, matrix)
 		else:
-			ret = self.check_rule_cond(name, cond, matrix)
+			ret = self.check_detail_cond(cond, matrix)
 
 		return ret
 
 
-	def check_rule_cond(self, name, cond, matrix):
+	def check_detail_cond(self, cond, matrix):
 
 		param = ''
-		result = ''
+		match = ''
 		model = matrix['model']
+
+		flag = True 
+		value = None
 
 		tmp = re.sub("'", "", cond)
 
+		if cond == True or cond == 'true':
+			if debug:
+				print '\n------------ cond_check() ---------------'
+				print 'cond: %s' % cond
+				print '-----------------------------------------'
+			return True
+
+
+		# ex: qid[1].val=1
+		m = re.match('qid\[(.*)\].*=(.*)', cond)
+		if m:
+			answer = matrix['answer']
+			qid = int(m.group(1))
+			match = m.group(2)
+			if len(answer) >= qid and answer[qid] == match: 
+				return True
+			else:
+				return False
+				
+
+		# ex: 'FD' in 'system_info_extendedmodelname'
 		m = re.match('(.*)\sin\s(.*)', tmp)
 		if m:
 			match = m.group(1)
 			param = m.group(2)	
 			
 
-		m = re.match('(.*)=(.*)', tmp)
+		# CAMERA_TYPE!=VC
+		m = re.match('(.*)!=(.*)', tmp)
+		if m:
+			flag = False 
+			param = m.group(1)	
+			match = m.group(2)
+
+		# capability_fisheye=1
+		m = re.match('(^!)=(^!)', tmp)
 		if m:
 			param = m.group(1)	
 			match = m.group(2)
 
 
-		flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
-		cdf_path = os.path.join(flash_base, model, 'etc', 'CDF.xml')
-		prefix_etc_path = os.path.join(flash_base, model)
+		if param != '':
+			flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
+			cdf_path = os.path.join(flash_base, model, 'etc', 'CDF.xml')
+			prefix_etc_path = os.path.join(flash_base, model)
 
-		value = fetch_value_from_configer(cdf_path, prefix_etc_path, param)
+			value = fetch_value_from_configer(cdf_path, prefix_etc_path, param)
 
-		if debug:
-			print '---------------------------------'
-			print cdf_path
-			print prefix_etc_path
-			print model 
-			print 'name:%s' % name
-			print 'param:%s' % param 
-			print 'value:%s' % value 
-			print 'match:%s' % match 
-			print '---------------------------------'
 
 
 		# if the value is None, it means that the param is not maintained by configer
@@ -473,15 +523,34 @@ class api_version_object(object):
 		if value == None:
 			for m in matrix['content']:
 				if m['name'] == param and m['value'] == match:
-					return True
+					value = m['value']	
 					
+		if debug:
+			print '\n------------ cond_check() ---------------'
+			#print cdf_path
+			#print prefix_etc_path
+			print model 
+			print 'param:%s' % param 
+			print 'value:%s' % value 
+			if flag:
+				print 'match:%s' % match 
+			else:
+				print 'not match:%s' % match
+			print '-----------------------------------------'
 
-		if match == value:
-			return True
-		elif value != None and match in value:
-			return True
+
+		if flag:
+			if match == value:
+				return True
+			elif value != None and match in value:
+				return True
+			else:
+				return False
 		else:
-			return False
+			if match != value:
+				return True
+			else:
+				return False
 
 
 	def handle_detail_common_rule(self, matrix, content, index):
@@ -494,7 +563,7 @@ class api_version_object(object):
 			if debug:
 				print '\n'
 
-			m = self.check_rule_multiple_cond(name, rule['cond'], matrix)
+			m = self.check_cond(rule['cond'], matrix)
 			if m:
 				matrix['content'][index]['value'] = rule['value']
 				if debug:
@@ -530,8 +599,8 @@ class api_version_object(object):
 				self.handle_detail_common_rule(m, content, index)
 
 
-		print '\n\n'
 		print json.dumps(self.matrix, indent=4, sort_keys=True)
+		print '\n\n'
 
 	def parse_api_rule(self):
 		data = open(self.api_rule).read()  
@@ -551,24 +620,31 @@ class api_version_object(object):
 			self.parse_detail_api_rule(m, specs)
 
 		print json.dumps(self.matrix, indent=4, sort_keys=True)
+		print '\n\n'
 
 	def parse_detail_api_rule(self, matrix, specs):
 
 		for spec in specs:
-			questions = spec['ques']
-			tasks = spec['task']
+			questions = []
+			tasks = []
+
+			if spec.has_key('ques'):
+				questions = spec['ques']
+
+			if spec.has_key('task'):
+				tasks = spec['task']
 
 			for question in questions: 
-				self.ask_user(question, matrix['model'])
+				self.ask_user(question, matrix)
 
 			for task in tasks: 
-				if self.check_cond(task['cond'], questions):
-					print task['cond']
-					print 'match'
+				if self.check_cond(task['cond'], matrix):
+					#print task['cond']
+					print 'match !!!!!!!!!!'
 					matrix['action'] = matrix['action'] + task['action'] 
 				else:
-					print task['cond']
-					print 'not match'
+					#print task['cond']
+					print 'not match ......'
 
 
 
