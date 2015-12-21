@@ -141,6 +141,12 @@ class base(object):
 
 		return False
 
+	def traverse(self, elem):
+		for node in elem.iter():
+			if node.text == None: 
+				node.text = '' 
+				print node
+
 	def prettify(self, elem):
 		"""Return a pretty-printed XML string for the Element."""
 		rough_string = et.tostring(elem, 'utf-8')
@@ -403,7 +409,7 @@ class api_version_object(object):
 		if self.check_cond(question['cond'], matrix):
 			ques = question['ask']
 
-			print '\nPlease answer the questions based on \'%s\' ...' % model
+			print '\nPlease answer the questions based on \'%s\' ...' % matrix['model'] 
 			print ques 
 			ans = raw_input()
 			while not self.check_answer(ques, ans):
@@ -411,20 +417,30 @@ class api_version_object(object):
 			
 			#question['ans'] = ans
 			qid = question['id']
+			print matrix['answer']
 			matrix['answer'][qid] = ans
 		else:
-			print 'don\'t need to ask.'
+			print 'No need to ask.'
 
 	def initial_matrix(self):
 
-		# The matrix contains the main infomation that we need
-		# and note that the length of matrix is 'numbers of model'
+		# The matrix contains the main infomation we need
+		# and the length of matrix is 'numbers of model'
+		#
+		# What initial_matrix() does: 
 		#
 		# (1) Find numbers of model 
-		# Use config_capability.xml to find models, 
+		# Use config_capability.xml to find models 
 		#
 		# (2) action list
-		# We initial the list first and it would be assigned after
+		# It saves the result after parsing the 'api_version.json' 
+		# Just initial here 
+		# 
+		# (3) content list
+		# It saves the result after parsing rule.json
+		#
+		# (4) answer list
+		# The replies answerd by the user  
 
 		tmp = {} 
 		capability = 'config_capability.xml'
@@ -439,16 +455,25 @@ class api_version_object(object):
 
 			tmp['action'] = [] 
 			tmp['content'] = [] 
-			tmp['answer'] = []
+			tmp['answer'] = ['']*20 # initial the list with null 
 			self.matrix.append(deepcopy(tmp))
 
 	def check_cond(self, cond, matrix):
 
 		ret = False
 
-		split = cond.split('||')
-		if len(split) > 1:
-			for s in split:
+		if cond == True or cond == 'true':
+			if debug:
+				print '\n------------ check condition ---------------'
+				print 'cond: %s' % cond
+				print '-----------------------------------------'
+
+			return True
+
+
+		sub = cond.split('||')
+		if len(sub) > 1:
+			for s in sub:
 				s = re.sub(' ', '', s)
 				ret =  ret | self.check_detail_cond(s, matrix)
 		else:
@@ -466,49 +491,45 @@ class api_version_object(object):
 		flag = True 
 		value = None
 
-		tmp = re.sub("'", "", cond)
+		cond = re.sub("'", "", cond)
 
-		if cond == True or cond == 'true':
-			if debug:
-				print '\n------------ cond_check() ---------------'
-				print 'cond: %s' % cond
-				print '-----------------------------------------'
-			return True
-
-
-		# ex: qid[1].val=1
+		# eg. qid[1].val=1
 		m = re.match('qid\[(.*)\].*=(.*)', cond)
 		if m:
 			answer = matrix['answer']
 			qid = int(m.group(1))
 			match = m.group(2)
-			if len(answer) >= qid and answer[qid] == match: 
+
+			if qid > len(answer): 
+				return False
+			elif answer[qid] == match:
 				return True
 			else:
 				return False
 				
 
-		# ex: 'FD' in 'system_info_extendedmodelname'
-		m = re.match('(.*)\sin\s(.*)', tmp)
+		# eg. 'FD' in 'system_info_extendedmodelname'
+		m = re.match('(.*)\sin\s(.*)', cond)
 		if m:
 			match = m.group(1)
 			param = m.group(2)	
 			
 
-		# CAMERA_TYPE!=VC
-		m = re.match('(.*)!=(.*)', tmp)
+		# eg. CAMERA_TYPE!=VC
+		m = re.match('(.*)!=(.*)', cond)
 		if m:
 			flag = False 
 			param = m.group(1)	
 			match = m.group(2)
 
-		# capability_fisheye=1
-		m = re.match('(^!)=(^!)', tmp)
+		# eg. capability_fisheye=1
+		m = re.match('(^!)=(^!)', cond)
 		if m:
 			param = m.group(1)	
 			match = m.group(2)
 
 
+		# use configer to fetch the parameter value
 		if param != '':
 			flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
 			cdf_path = os.path.join(flash_base, model, 'etc', 'CDF.xml')
@@ -518,18 +539,18 @@ class api_version_object(object):
 
 
 
-		# if the value is None, it means that the param is not maintained by configer
-		# it would be CAMERA_MODEL, CAMERA_TYPE... 
+		# if the value is None, it means that the parameter is not maintained by configer
+		# it would be CAMERA_MODEL, CAMERA_TYPE ... 
 		if value == None:
 			for m in matrix['content']:
 				if m['name'] == param and m['value'] == match:
 					value = m['value']	
 					
 		if debug:
-			print '\n------------ cond_check() ---------------'
+			print '\n------------ check condition ---------------'
 			#print cdf_path
 			#print prefix_etc_path
-			print model 
+			print 'model:%s' % model 
 			print 'param:%s' % param 
 			print 'value:%s' % value 
 			if flag:
