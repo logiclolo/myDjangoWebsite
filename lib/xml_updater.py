@@ -1,0 +1,366 @@
+#!/usr/bin/env python
+
+import sys, os
+import re 
+import json
+from pprint import pprint
+from xml.dom import minidom
+from lxml import etree
+import subprocess
+import HTMLParser
+from copy import deepcopy
+from configer import *
+from check_cond import *
+
+if sys.version_info[:2] >= (2, 5):
+	import xml.etree.ElementTree as et 
+else:
+	import elementtree.ElementTree as et 
+
+debug = True
+
+class base(object):
+	confile = ''
+	method = ''
+	matrix = {}
+	matrix_action = {} 
+	matrix_contents = []
+	matrix_model = ''
+
+	def __init__(self, action, matrix):
+		self.confile = action['file']
+		self.method = action['method']
+		self.matrix = matrix
+		self.matrix_action = action
+		self.matrix_contents = matrix['content'] 
+		self.matrix_model = matrix['model'] 
+
+		self.locate_config()
+		self.compose_detail_action()
+
+		print json.dumps(self.matrix_action, indent=4, sort_keys=True)
+
+	def locate_config(self):
+
+		self.matrix_action['path'] = '' 
+
+		directory = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base', self.matrix_model)  
+		path = subprocess.Popen('find %s -iname %s' % (directory, self.confile), shell=True, stdout = subprocess.PIPE).stdout
+		for p in path: 	
+			p = re.sub('\n', '', p)
+			self.matrix_action['path'] = p
+
+		# the file could be in 'common'
+		if len(self.matrix_action['path']) == 0:
+			flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base', 'common')
+			path = subprocess.Popen('find %s -iname %s' % (flash_base, self.confile), shell=True, stdout = subprocess.PIPE).stdout
+			for p in path: 	
+				p = re.sub('\n', '', p)
+				self.matrix_action['path'] = p
+
+
+	def compose_detail_action(self):
+
+		elements = self.matrix_action['element'] 
+
+		for element in elements:
+			xpath = element['param']
+			m = re.search('<.*>', xpath)
+			if m:
+				self.evaluate_param(element)
+			else:
+				for de in element['detail']:
+					de['xpath'].append(xpath)
+
+	def evaluate_param(self, element):
+
+		# find c<n>, s<n> or <..> 
+		# and replace the variable with real number/value
+		#
+		#
+		# The final result is saved to element['xpath']  
+		# and after that self.action() would use these detail
+
+		element['xpath'] = [] 
+		element['xpath'].append(deepcopy(element['param']))
+
+		prog = re.compile('c<n>')
+		patterns = prog.findall(element['param'])
+		if len(patterns) > 0:
+			pattern = patterns[0]
+
+			tmp = []
+			for x in element['xpath']:
+				value = re.sub(pattern, 'c0', x)
+				tmp.append(value)
+			element['xpath'] = deepcopy(tmp)
+
+
+		prog = re.compile('s<n>')
+		patterns = prog.findall(element['param'])
+		if len(patterns) > 0:
+			self.find_stream_number(element)
+			pattern = patterns[0]
+
+			number = int(element[pattern]) 
+			tmp = []
+			for x in element['xpath']:
+				for i in range(0, number):
+					value = re.sub(pattern, 's%d' % i, x)
+					tmp.append(value)
+			element['xpath'] = deepcopy(tmp)
+
+
+	def find_stream_number(self, element):
+
+		capability = 'config_capability.xml'
+		xpath = 'capability/nmediastream'
+
+		path = self.matrix_action['path']
+		dirname = os.path.dirname(path)
+		caps = subprocess.Popen('find %s -iname %s' % (dirname, capability), shell=True, stdout = subprocess.PIPE).stdout
+		for cap in caps:
+			cap = re.sub('\n', '', cap)
+			et_object = et.parse(cap)
+			elem = et_object.find(xpath)
+
+			element['s<n>'] = elem.text
+
+		# todo: it can use configer to get value too
+
+
+	def check_cond(self, cond):
+
+		m = re.match('(.*)=(.*)', cond)
+		if m:
+			param = m.group(1)	
+			match = m.group(2)
+		else:
+			param = match = None
+
+		for content in self.matrix_contents:
+			if content['name'] == param and content['value'] == match:
+				return True
+
+		return False
+
+	def traverse(self, elem):
+		for node in elem.iter():
+			if node.text == None: 
+				node.text = '' 
+				print node
+
+	def prettify(self, elem):
+		# Return a pretty-printed XML string for the Element.
+		rough_string = et.tostring(elem, encoding='utf-8')
+		reparsed = minidom.parseString(rough_string)
+		tmp = reparsed.toprettyxml(indent="\t")
+		
+		# remove the redundant line
+		tmp = re.sub('(\t+\s*\n+)+', '', tmp) 
+
+
+		# handle different situation under CDF and config
+		# It's a workaround ... need more good solution
+		if re.search('CDF', self.matrix_action['path']):
+			tmp = re.sub('<\?.*\?>', '<?xml version="1.0" encoding="UTF-8"?>', tmp)
+			tmp = re.sub('<root>', '<root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">', tmp)
+		else:
+			# replace <tag/> with <tag></tag>
+			tmp = re.sub('<\?.*\?>', '', tmp)
+			tmp = re.sub(r'<(.*)/>', r'<\1></\1>', tmp)
+
+
+		# handle the escape
+		# eg. &quot, &lt, &gt
+		h = HTMLParser.HTMLParser()
+		xml_content = h.unescape(tmp)
+
+		return xml_content 
+
+	def output(self, filename, content):
+		try:
+			outh = open(filename,'w')
+		except IOError, e:
+			print e
+
+		outh.write(content)
+
+	def find_index(self, target_list, aim):
+		for target in target_list:
+			if target['path'] == aim:
+				return target_list.index(target)
+
+		return None
+
+	def action(self):
+
+		stain = False 
+
+		path = self.matrix_action['path']
+		elements = self.matrix_action['element']
+
+		if path != '':
+			print path
+			et_object = et.parse(path, CommentedTreeBuilder())
+			et_root = et_object.getroot()
+		else:
+			return False
+
+
+		for element in elements:
+			if element.has_key('cond') and not check_cond(element['cond'], self.matrix): 
+				continue
+
+			stain = self.detail_action(et_object, element)
+
+		if stain:
+			content = self.prettify(et_root)
+			self.output(path, content)
+		#else:
+			#print 'The param is exist or absent. Please check yourself.'
+
+		if stain:
+			return True 
+		else:
+			return False 
+
+
+	def detail_action(self, et_object, xpaths, element): 
+		# overwrite it	
+
+		return None 
+
+
+class add(base):
+	""" Add the tag into XML """
+
+	def detail_action(self, et_object, element):
+		et_new_node =  self.insert_new_xpath(et_object, element)
+
+		if et_new_node != None:
+			return True
+		else:
+			print '\'%s\' exists already !\n' % element['param']
+			return False
+
+	def insert_new_xpath(self, et_object, element):
+
+		et_new_node = None
+		et_ori_object = et_object
+		xpaths = element['xpath']
+
+		for xpath in xpaths: 
+			# travel every element of the given xpath
+			# if the element is not in the xml tree, then insert it
+			trace = xpath.split('_')
+			for node in trace:	
+				ori_object = et_object
+				et_object = et_object.find(node)
+				if et_object == None:
+					et_new_node = et.Element(node)
+
+					# the last element in the xpath may have <check> or <value>
+					if  node == trace[-1]:
+						if element.has_key('value'):
+							value = str(element['value'])
+							m = re.match('\?(.*)', value)
+							if m:
+								# default value
+								et_new_node.text = m.group(1) 
+								et_comment_node = et.Comment('[Notice] Please modify the default value below !!!')
+								ori_object.append(et_comment_node)
+							else:
+								et_new_node.text = value 
+
+						if element.has_key('check'):
+							check = element['check']
+							if check != None and check != 'null':
+								et_new_check_node = et.Element('check')
+								et_new_check_node.text = str(check)
+								et_new_node.append(et_new_check_node)
+							et_new_value_node = et.Element('value')
+							et_new_node.append(et_new_value_node)
+
+
+					ori_object.append(et_new_node)
+					et_object = ori_object.find(node) 
+
+			et_object = et_ori_object
+
+		return et_new_node
+
+
+class remove(base):
+	""" Remove the tag from XML """
+
+	def detail_action(self, et_object, element):
+		ret =  self.remove_xpath(et_object, element)
+
+		if ret:
+			return True
+		else:
+			print '\'%s\' does not exist !\n' % element['param']
+			return False
+
+	def remove_xpath(self, et_object, element):
+
+		ret = False
+		xpaths = element['xpath']
+
+		for xpath in xpaths: 
+			xpath = re.sub('_', '/', xpath)
+			m = re.match('(.*)/(.*)$', xpath)
+			if m:
+				parent = et_object.find(m.group(1))
+				child = et_object.find(xpath)
+				if parent != None and child != None:
+					parent.remove(child)
+					ret = True
+		return ret
+
+
+
+class modify(base):
+	""" Modify the XML tag content """
+
+	def detail_action(self, et_object, element):
+		stain = False
+
+		xpaths = element['xpath']
+
+		for xpath in xpaths:
+			xpath = re.sub('_', '/', xpath)
+			et_target_tag = et_object.find(xpath)
+
+			if et_target_tag is not None:
+
+				if element.has_key('value'):
+					et_target_tag.text = str(element['value']) 
+
+				if element.has_key('check'):
+					et_child_tag = et_target_tag.find('check')
+					if et_child_tag != None: 
+						et_child_tag.text = str(element['check'])
+
+				#et_target_tag.set('update', 'yes')
+				stain = True
+
+		if not stain:
+			print '\'%s\' does not exist !\n' % element['param']
+
+		return stain
+
+
+class CommentedTreeBuilder ( et.XMLTreeBuilder ):
+	def __init__ ( self, html = 0, target = None ):
+		et.XMLTreeBuilder.__init__( self, html, target )
+		self._parser.CommentHandler = self.handle_comment
+    
+	def handle_comment ( self, data ):
+		self._target.start( et.Comment, {} )
+		self._target.data( data )
+		self._target.end( et.Comment )
+
+
+# vim: tabstop=8 shiftwidth=8 softtabstop=8 noexpandtab
