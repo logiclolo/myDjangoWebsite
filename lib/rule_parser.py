@@ -148,19 +148,30 @@ class base(object):
 				print node
 
 	def prettify(self, elem):
-		"""Return a pretty-printed XML string for the Element."""
-		rough_string = et.tostring(elem, 'utf-8')
+		# Return a pretty-printed XML string for the Element.
+		rough_string = et.tostring(elem, encoding='utf-8')
 		reparsed = minidom.parseString(rough_string)
 		tmp = reparsed.toprettyxml(indent="\t")
 		
 		# remove the redundant line
-		xml_content = re.sub('(\t+\s*\n+)+', '', tmp) 
-		#xml_content = re.sub('^<?.*?>\n', '', xml_content)
+		tmp = re.sub('(\t+\s*\n+)+', '', tmp) 
+
+
+		# handle different situation under CDF and config
+		# It's a workaround ... need more good solution
+		if re.search('CDF', self.matrix_action['path']):
+			tmp = re.sub('<\?.*\?>', '<?xml version="1.0" encoding="UTF-8"?>', tmp)
+			tmp = re.sub('<root>', '<root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">', tmp)
+		else:
+			# replace <tag/> with <tag></tag>
+			tmp = re.sub('<\?.*\?>', '', tmp)
+			tmp = re.sub(r'<(.*)/>', r'<\1></\1>', tmp)
+
 
 		# handle the escape
 		# eg. &quot, &lt, &gt
 		h = HTMLParser.HTMLParser()
-		xml_content = h.unescape(xml_content)
+		xml_content = h.unescape(tmp)
 
 		return xml_content 
 
@@ -356,33 +367,6 @@ class api_version_object(object):
 		print 'The format of rule is wrong!'
 		sys.exit(1)
 
-	def check_cond1(self, cond, ques, content):
-		#print '[check condition] %s' % cond
-		if cond == True:
-			return True
-		
-
-		# cond in rule.json
-		tmp = re.sub("'", "", cond)
-		m = re.match('(.*)\sin\s(.*)', tmp)
-		if m:
-			value = m.group(1) 
-			param = m.group(2)
-
-
-
-		# cond in api_version.json, eg. 0301c.json
-		m = re.match('qid\[(.*)\].*=(.*)', cond)
-		if ques != None and m:
-			#print m.group(1)
-			#print m.group(2)
-			for q in ques:
-				if q['id'] == int(m.group(1)) and q['ans'] == m.group(2):
-					return True
-					
-
-		return False
-
 	def check_answer(self, ques, ans):
 
 		try:
@@ -471,11 +455,17 @@ class api_version_object(object):
 			return True
 
 
-		sub = cond.split('||')
-		if len(sub) > 1:
-			for s in sub:
-				s = re.sub(' ', '', s)
+		sub_or = cond.split('||')
+		sub_and = cond.split('&&')
+		if len(sub_or) > 1:
+			for s in sub_or:
+				s = re.sub('\s+', '', s)
 				ret =  ret | self.check_detail_cond(s, matrix)
+		elif len(sub_and) > 1:
+			ret = True
+			for s in sub_and:
+				s = re.sub('\s+', '', s)
+				ret =  ret & self.check_detail_cond(s, matrix)
 		else:
 			ret = self.check_detail_cond(cond, matrix)
 
@@ -515,19 +505,18 @@ class api_version_object(object):
 			param = m.group(2)	
 			
 
+		# eg. capability_fisheye=1
+		m = re.match('([^!]+)=([^!]+)', cond)
+		if m:
+			param = m.group(1)	
+			match = m.group(2)
+
 		# eg. CAMERA_TYPE!=VC
 		m = re.match('(.*)!=(.*)', cond)
 		if m:
 			flag = False 
 			param = m.group(1)	
 			match = m.group(2)
-
-		# eg. capability_fisheye=1
-		m = re.match('(^!)=(^!)', cond)
-		if m:
-			param = m.group(1)	
-			match = m.group(2)
-
 
 		# use configer to fetch the parameter value
 		if param != '':
@@ -543,7 +532,7 @@ class api_version_object(object):
 		# it would be CAMERA_MODEL, CAMERA_TYPE ... 
 		if value == None:
 			for m in matrix['content']:
-				if m['name'] == param and m['value'] == match:
+				if m['name'] == param:
 					value = m['value']	
 					
 		if debug:
@@ -559,6 +548,9 @@ class api_version_object(object):
 				print 'not match:%s' % match
 			print '-----------------------------------------'
 
+
+		match = str(match).lower()
+		value = str(value).lower()
 
 		if flag:
 			if match == value:
@@ -596,8 +588,9 @@ class api_version_object(object):
 		listp = []
 		dictp = {}
 		for name in names:
-			dictp['name'] = name 
-			dictp['value'] = None
+			for key, value in name.iteritems():
+				dictp['name'] = key
+				dictp['value'] = value 
 			listp.append(deepcopy(dictp))	
 
 		return deepcopy(listp)
