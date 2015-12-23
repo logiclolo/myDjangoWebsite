@@ -85,11 +85,7 @@ def check_detail_cond(cond, matrix):
 
 	# use configer to fetch the parameter value
 	if param != '':
-		flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
-		cdf_path = os.path.join(flash_base, model, 'etc', 'CDF.xml')
-		prefix_etc_path = os.path.join(flash_base, model)
-
-		value = fetch_value_from_configer(cdf_path, prefix_etc_path, param)
+		value = fetch_value_from_configer(model, param)
 
 
 

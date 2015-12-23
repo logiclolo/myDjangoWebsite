@@ -65,12 +65,12 @@ class base(object):
 
 		for element in elements:
 			xpath = element['param']
+			element['xpath'] = [] 
+			element['xpath'].append(deepcopy(xpath))
+
 			m = re.search('<.*>', xpath)
 			if m:
 				self.evaluate_param(element)
-			else:
-				for de in element['detail']:
-					de['xpath'].append(xpath)
 
 	def evaluate_param(self, element):
 
@@ -80,9 +80,6 @@ class base(object):
 		#
 		# The final result is saved to element['xpath']  
 		# and after that self.action() would use these detail
-
-		element['xpath'] = [] 
-		element['xpath'].append(deepcopy(element['param']))
 
 		prog = re.compile('c<n>')
 		patterns = prog.findall(element['param'])
@@ -96,37 +93,38 @@ class base(object):
 			element['xpath'] = deepcopy(tmp)
 
 
-		prog = re.compile('s<n>')
+		prog = re.compile('s<m>')
 		patterns = prog.findall(element['param'])
 		if len(patterns) > 0:
-			self.find_stream_number(element)
+			nstream = self.find_stream_number()
 			pattern = patterns[0]
 
-			number = int(element[pattern]) 
 			tmp = []
 			for x in element['xpath']:
-				for i in range(0, number):
+				for i in range(0, nstream):
 					value = re.sub(pattern, 's%d' % i, x)
 					tmp.append(value)
 			element['xpath'] = deepcopy(tmp)
 
 
-	def find_stream_number(self, element):
+		m = re.search('<qid\[(\d+)\]\.val>', element['param'])
+		if m:
+			index = int(m.group(1))
+			number = self.matrix['answer'][index]
+			number = int(number)
+			tmp = []
+			for x in element['xpath']:
+				for i in range(0, number):
+					value = re.sub('<qid\[%d\].val>' % index, '%d' % i, x)
+					tmp.append(value)
+			element['xpath'] = deepcopy(tmp)
 
-		capability = 'config_capability.xml'
-		xpath = 'capability/nmediastream'
+	def find_stream_number(self):
 
-		path = self.matrix_action['path']
-		dirname = os.path.dirname(path)
-		caps = subprocess.Popen('find %s -iname %s' % (dirname, capability), shell=True, stdout = subprocess.PIPE).stdout
-		for cap in caps:
-			cap = re.sub('\n', '', cap)
-			et_object = et.parse(cap)
-			elem = et_object.find(xpath)
-
-			element['s<n>'] = elem.text
-
-		# todo: it can use configer to get value too
+		for c in self.matrix['content']:
+			if c['name'] == 'TOTALSTREAMNUM':
+				return int(c['value'])
+		return 3 
 
 
 	def check_cond(self, cond):
@@ -167,7 +165,7 @@ class base(object):
 			tmp = re.sub('<root>', '<root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">', tmp)
 		else:
 			# replace <tag/> with <tag></tag>
-			tmp = re.sub('<\?.*\?>', '', tmp)
+			tmp = re.sub('<\?.*\?>\n', '', tmp)
 			tmp = re.sub(r'<(.*)/>', r'<\1></\1>', tmp)
 
 

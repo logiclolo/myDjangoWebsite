@@ -65,13 +65,14 @@ class api_version_object(object):
 
 			print '\nPlease answer the questions based on \'%s\' ...' % matrix['model'] 
 			print ques 
+			if question.has_key('range'):
+				print '(range is %s)' % question['range'] 
 			ans = raw_input()
 			while not self.check_answer(ques, ans):
 				ans = raw_input()
 			
 			#question['ans'] = ans
 			qid = question['id']
-			print matrix['answer']
 			matrix['answer'][qid] = ans
 		else:
 			print 'No need to ask.'
@@ -254,13 +255,20 @@ class api_version_object(object):
 					print json.dumps(matrix, indent=4, sort_keys=True)
 				break
 
-	def compose_dict_in_list(self, names):
+	def compose_dict_in_list(self, names, matrix):
 		listp = []
 		dictp = {}
 		for name in names:
 			for key, value in name.iteritems():
 				dictp['name'] = key
-				dictp['value'] = value 
+
+				# initial internal parameter value
+				m = re.search('_', str(value))
+				if m:
+					dictp['value'] = fetch_value_from_configer(matrix['model'], str(value))
+				else:
+					dictp['value'] = value 
+
 			listp.append(deepcopy(dictp))	
 
 		return deepcopy(listp)
@@ -274,7 +282,7 @@ class api_version_object(object):
 
 		# parse rule.json and save the info to matrix 
 		for m in self.matrix:
-			m['content'] = self.compose_dict_in_list(jdata['name'])
+			m['content'] = self.compose_dict_in_list(jdata['name'], m)
 			for content in jdata['content']:
 				# the index is for self.matrix[model]['content'][index]
 				# and it would be used after the condition is matched

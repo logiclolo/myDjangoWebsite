@@ -38,13 +38,17 @@ def stop_configer(subprocess_p):
 def start_confclient(param):
 	return subprocess.Popen('./configer/confclient -p 99 -t Value -g %s' % param, shell=True, stdout = subprocess.PIPE)
 
-def fetch_value_from_configer(cdf_path, prefix_etc_path, param):
+def fetch_value_from_configer(model, param):
 
 	ret = None
 	returncode = '' 
 	retry = 5
 	confclient = None
 	configer = None
+
+	flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
+	cdf_path = os.path.join(flash_base, model, 'etc', 'CDF.xml')
+	prefix_etc_path = os.path.join(flash_base, model)
 
 	configer = start_configer(cdf_path, prefix_etc_path)
 
