@@ -6,6 +6,7 @@ import getopt
 import os.path
 from rule_parser import *
 from xml_updater import *
+from utility import *
 
 def output(filename, content):
 	try:
@@ -67,12 +68,13 @@ if __name__ == '__main__':
 		sys.exit(1)
 
 	path = './tpl/%s.json' % version
-
 	if not os.path.isfile(path):
 		print 'No %s.json found' % version 
 		sys.exit(0)
 
-	obj = api_version_object(path) 
+	model = choose_model('sourceme')
+
+	obj = Configurator(path, model) 
 
 	print '#############################################'
 	print 'Begin to parse rule.json'

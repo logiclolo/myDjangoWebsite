@@ -20,7 +20,7 @@ else:
 
 debug = True
 
-class api_version_object(object): 
+class Configurator(object): 
 	version = '' 
 	api_rule = ''
 	common_rule = ''
@@ -28,9 +28,10 @@ class api_version_object(object):
 	config_path = []
 	matrix = [] 
 
-	def __init__(self, path):
+	def __init__(self, path, models):
 		self.api_rule = path
-		self.common_rule = 'rule.json'
+		self.common_rule = './tpl/rule.json'
+		self.models = models
 
 		self.initial_matrix()
 
@@ -85,8 +86,7 @@ class api_version_object(object):
 		#
 		# What initial_matrix() does: 
 		#
-		# (1) Find numbers of model 
-		# Use config_capability.xml to find models 
+		# (1) get model name
 		#
 		# (2) action list
 		# It saves the result after parsing the 'api_version.json' 
@@ -99,16 +99,8 @@ class api_version_object(object):
 		# The replies answerd by the user  
 
 		tmp = {} 
-		capability = 'config_capability.xml'
-
-		flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
-		dirs = subprocess.Popen('find %s -iname %s' % (flash_base, capability), shell=True, stdout = subprocess.PIPE).stdout
-		for d in dirs: 	
-			d = re.sub('\n', '', d)
-			m = re.search('.*/([A-Z][A-Z][0-9A-Z]+)/.*', d)
-			if m:
-				tmp['model'] = m.group(1) 
-
+		for model in self.models:
+			tmp['model'] = model
 			tmp['action'] = [] 
 			tmp['content'] = [] 
 			tmp['answer'] = ['']*20 # initial the list with null 
@@ -210,12 +202,7 @@ class api_version_object(object):
 
 			for task in tasks: 
 				if check_cond(task['cond'], matrix):
-					#print task['cond']
-					print 'match !!!!!!!!!!'
 					matrix['action'] = matrix['action'] + task['action'] 
-				else:
-					#print task['cond']
-					print 'not match ......'
 
 
 
