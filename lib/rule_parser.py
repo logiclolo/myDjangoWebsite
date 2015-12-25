@@ -11,6 +11,7 @@ import HTMLParser
 from copy import deepcopy
 from configer import *
 from check_cond import *
+from info_collector import *
 
 if sys.version_info[:2] >= (2, 5):
 	import xml.etree.ElementTree as et 
@@ -265,7 +266,7 @@ class api_version_object(object):
 				# initial internal parameter value
 				m = re.search('_', str(value))
 				if m:
-					dictp['value'] = fetch_value_from_configer(matrix['model'], str(value))
+					dictp['value'] = configer(matrix['model']).fetch_value(str(value))
 				else:
 					dictp['value'] = value 
 
@@ -305,9 +306,11 @@ class api_version_object(object):
 		content = jdata['content']
 		specs = jdata['content']['spec']
 
+		#InfoCollector(self.matrix, specs).main()
+		#sys.exit(0)
+
 		# compose the self.matrix 
 		# which contains all the information we need 
-
 		for m in self.matrix:
 			self.parse_detail_api_rule(m, specs)
 

@@ -85,7 +85,7 @@ def check_detail_cond(cond, matrix):
 
 	# use configer to fetch the parameter value
 	if param != '':
-		value = fetch_value_from_configer(model, param)
+		value = configer(model).fetch_value(param)
 
 
 

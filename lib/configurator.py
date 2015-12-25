@@ -3,6 +3,7 @@
 import sys, os
 import json
 from rule_parser import *
+from xml_updater import *
 
 def output(filename, content):
 	try:
@@ -45,13 +46,16 @@ if __name__ == '__main__':
 		print 'Have you source the project devel file?'
 		sys.exit(1)
 
-	obj = api_version_object('0301c.json') 
+	#obj = api_version_object('0301c.json') 
+	obj = api_version_object('0303a.json') 
+	#obj = api_version_object('0302b.json') 
 
 	print '#############################################'
 	print 'Begin to parse rule.json'
 	print '#############################################'
-	#obj.parse_common_rule()
+	obj.parse_common_rule()
 
+	print '\n'
 	print '#############################################'
 	print 'Begin to update CDF/configs'
 	print '#############################################'
