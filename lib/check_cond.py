@@ -5,7 +5,7 @@ import re
 import json
 from configer import *
 
-debug = True
+debug = False 
 
 def check_cond(cond, matrix):
 

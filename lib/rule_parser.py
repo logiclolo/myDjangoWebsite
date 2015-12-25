@@ -8,6 +8,7 @@ from xml.dom import minidom
 from lxml import etree
 import subprocess
 import HTMLParser
+import bcolors
 from copy import deepcopy
 from configer import *
 from check_cond import *
@@ -17,8 +18,6 @@ if sys.version_info[:2] >= (2, 5):
 	import xml.etree.ElementTree as et 
 else:
 	import elementtree.ElementTree as et 
-
-debug = True
 
 class Configurator(object): 
 	version = '' 
@@ -66,7 +65,7 @@ class Configurator(object):
 			ques = question['ask']
 
 			print '\nPlease answer the questions based on \'%s\' ...' % matrix['model'] 
-			print ques 
+			print bcolors.WARNING + ques + bcolors.NORMAL
 			if question.has_key('range'):
 				print '(range is %s)' % question['range'] 
 			ans = raw_input()
@@ -112,16 +111,8 @@ class Configurator(object):
 		name = content['param']
 
 		for rule in rules:
-
-			if debug:
-				print '\n'
-
-			m = check_cond(rule['cond'], matrix)
-			if m:
+			if check_cond(rule['cond'], matrix):
 				matrix['content'][index]['value'] = rule['value']
-				if debug:
-					print 'match!'
-					print json.dumps(matrix, indent=4, sort_keys=True)
 				break
 
 	def compose_dict_in_list(self, names, matrix):
@@ -160,8 +151,9 @@ class Configurator(object):
 				self.handle_detail_common_rule(m, content, index)
 
 
-		print json.dumps(self.matrix, indent=4, sort_keys=True)
-		print '\n\n'
+		if debug:
+			print json.dumps(self.matrix, indent=4, sort_keys=True)
+			print '\n\n'
 
 	def parse_api_rule(self):
 		data = open(self.api_rule).read()  
@@ -182,8 +174,9 @@ class Configurator(object):
 		for m in self.matrix:
 			self.parse_detail_api_rule(m, specs)
 
-		print json.dumps(self.matrix, indent=4, sort_keys=True)
-		print '\n\n'
+		if debug:
+			print json.dumps(self.matrix, indent=4, sort_keys=True)
+			print '\n\n'
 
 	def parse_detail_api_rule(self, matrix, specs):
 

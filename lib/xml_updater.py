@@ -17,9 +17,7 @@ if sys.version_info[:2] >= (2, 5):
 else:
 	import elementtree.ElementTree as et 
 
-debug = True
-
-class base(object):
+class Base(object):
 	confile = ''
 	method = ''
 	matrix = {}
@@ -38,7 +36,8 @@ class base(object):
 		self.locate_config()
 		self.compose_detail_action()
 
-		print json.dumps(self.matrix_action, indent=4, sort_keys=True)
+		if debug:
+			print json.dumps(self.matrix_action, indent=4, sort_keys=True)
 
 	def locate_config(self):
 
@@ -224,7 +223,7 @@ class base(object):
 			return False 
 
 
-class add(base):
+class Add(Base):
 	""" Add the tag into XML """
 
 	def detail_action(self, et_object, element):
@@ -299,7 +298,7 @@ class add(base):
 			et_new_value_node = et.Element('value')
 			et_new_node.append(et_new_value_node)
 
-class remove(base):
+class Remove(Base):
 	""" Remove the tag from XML """
 
 	def detail_action(self, et_object, element):
@@ -329,7 +328,7 @@ class remove(base):
 
 
 
-class modify(base):
+class Modify(Base):
 	""" Modify the XML tag content """
 
 	def detail_action(self, et_object, element):

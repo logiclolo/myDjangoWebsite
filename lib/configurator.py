@@ -25,15 +25,16 @@ def do_action(action, md, model_matrix):
 def action_dispatch(model_matrix):
 	for action in model_matrix['action']:
 		if action['method'] == 'add':
-			do_action(action, add, model_matrix)
+			do_action(action, Add, model_matrix)
 		elif action['method'] == 'remove':
-			do_action(action, remove, model_matrix)
+			do_action(action, Remove, model_matrix)
 		elif action['method'] == 'modify':
-			do_action(action, modify, model_matrix)
+			do_action(action, Modify, model_matrix)
 
 
 def update_config(matrix):
 	for model_matrix in matrix:
+		print bcolors.BLUE + 'handle %s ...' % model_matrix['model'] + bcolors.NORMAL
 		action_dispatch(model_matrix)
 
 def check_envs():
@@ -77,13 +78,12 @@ if __name__ == '__main__':
 	obj = Configurator(path, model) 
 
 	print '#############################################'
-	print 'Begin to parse rule.json'
+	print 'Parsing rule.json ...' 
 	print '#############################################'
 	obj.parse_common_rule()
 
-	print '\n'
 	print '#############################################'
-	print 'Begin to update CDF/configs'
+	print 'Updating CDF/configs ...'
 	print '#############################################'
 	obj.parse_api_rule()
 
