@@ -249,8 +249,8 @@ class add(base):
 		xpaths = element['xpath']
 
 		for xpath in xpaths: 
-			# travel every element of the given xpath
-			# if the element is not in the xml tree, then insert it
+			# travel every node of the given xpath
+			# if the node is not in the xml tree, then insert it
 			trace = xpath.split('_')
 			for node in trace:	
 				ori_object = et_object
@@ -258,27 +258,9 @@ class add(base):
 				if et_object == None:
 					et_new_node = et.Element(node)
 
-					# the last element in the xpath may have <check> or <value>
+					# the last node in the xpath 
 					if  node == trace[-1]:
-						if element.has_key('value'):
-							value = str(element['value'])
-							m = re.match('\?(.*)', value)
-							if m:
-								# default value
-								et_new_node.text = m.group(1) 
-								et_comment_node = et.Comment('[Notice] Please modify the default value below !!!')
-								ori_object.append(et_comment_node)
-							else:
-								et_new_node.text = value 
-
-						if element.has_key('check'):
-							check = element['check']
-							if check != None and check != 'null':
-								et_new_check_node = et.Element('check')
-								et_new_check_node.text = str(check)
-								et_new_node.append(et_new_check_node)
-							et_new_value_node = et.Element('value')
-							et_new_node.append(et_new_value_node)
+						self.handle_last_node(element, et_new_node, ori_object)
 
 
 					ori_object.append(et_new_node)
@@ -288,6 +270,40 @@ class add(base):
 
 		return et_new_node
 
+	def handle_last_node(self, element, et_new_node, ori_object):
+
+		# Handle ordinary config
+		if element.has_key('value'):
+			value = str(element['value'])
+			m = re.match('\?(.*)', value)
+			if m:
+				# default value
+				et_new_node.text = m.group(1) 
+				et_comment_node = et.Comment('[Notice] Please modify the default value below !!!')
+				ori_object.append(et_comment_node)
+			else:
+				et_new_node.text = value 
+
+		# Handle CDF ...  
+		if element.has_key('check'):
+			check = str(element['check'])
+			# <check>
+			if check != None and check != 'null':
+				et_new_check_node = et.Element('check')
+
+				m = re.match('\?(.*)', check)
+				if m:
+					# default check value
+					et_new_check_node.text = m.group(1) 
+					et_comment_node = et.Comment('[Notice] Please modify the check value below !!!')
+					et_new_node.append(et_comment_node)
+				else:
+					et_new_check_node.text = check
+				et_new_node.append(et_new_check_node)
+
+			# <value>
+			et_new_value_node = et.Element('value')
+			et_new_node.append(et_new_value_node)
 
 class remove(base):
 	""" Remove the tag from XML """
