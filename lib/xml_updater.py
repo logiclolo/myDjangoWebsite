@@ -224,12 +224,6 @@ class base(object):
 			return False 
 
 
-	def detail_action(self, et_object, xpaths, element): 
-		# overwrite it	
-
-		return None 
-
-
 class add(base):
 	""" Add the tag into XML """
 
