@@ -9,66 +9,68 @@ import signal
 import getpass
 import time
 
-def start_configer(cdf_path, prefix_etc_path):
-	ld_library_path = os.path.join(os.getcwd(), 'configer', 'lib') 
-	env = dict(os.environ)
-	env['LD_LIBRARY_PATH'] = ld_library_path
-	#p = subprocess.Popen('LD_LIBRARY_PATH=%s ./configer/configer -d -i %s -e %s' % (ld_library_path, cdf_path, prefix_etc_path), shell=True)
-	p = subprocess.Popen(('./configer/configer', '-d', '-i', cdf_path, '-e', prefix_etc_path), env=env)
-	p.wait()
+class configer(object):
 
-	#print p.pid
-	return p
+	def __init__(self, model):
+		flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
+		self.cdf = os.path.join(flash_base, model, 'etc', 'CDF.xml')
+		self.prefix_etc = os.path.join(flash_base, model)
 
-def stop_configer(subprocess_p):
+	def start(self):
+		ld_library_path = os.path.join(os.getcwd(), 'configer', 'lib') 
+		env = dict(os.environ)
+		env['LD_LIBRARY_PATH'] = ld_library_path
+		#p = subprocess.Popen('LD_LIBRARY_PATH=%s ./configer/configer -d -i %s -e %s' % (ld_library_path, self.cdf, self.prefix_etc), shell=True)
+		p = subprocess.Popen(('./configer/configer', '-d', '-i', self.cdf, '-e', self.prefix_etc), env=env)
+		p.wait()
 
-	# this can't terminate the configer process because of the wrong pid
-	#subprocess_p.terminate()
+		#print p.pid
+		return p
 
-        # workaround
-	# use 'ps' to get the configer process and terminate it
-	user = getpass.getuser()
-	results = subprocess.Popen('ps aux | grep %s | grep "configer/configer" | grep -v grep' % user, shell=True, stdout = subprocess.PIPE).stdout
-	for r in results:
-		pid = r.split()[1]
-		pid = int(pid)
-		os.kill(pid, signal.SIGTERM)
-		
+	def stop(self, subprocess_p):
 
-def start_confclient(param):
-	return subprocess.Popen('./configer/confclient -p 99 -t Value -g %s' % param, shell=True, stdout = subprocess.PIPE)
+		# this can't terminate the configer process because of the wrong pid
+		#subprocess_p.terminate()
 
-def fetch_value_from_configer(model, param):
+		# workaround
+		# use 'ps' to get the configer process and terminate it
+		user = getpass.getuser()
+		results = subprocess.Popen('ps aux | grep %s | grep "configer/configer" | grep -v grep' % user, shell=True, stdout = subprocess.PIPE).stdout
+		for r in results:
+			pid = r.split()[1]
+			pid = int(pid)
+			os.kill(pid, signal.SIGTERM)
 
-	ret = None
-	returncode = '' 
-	retry = 5
-	confclient = None
-	configer = None
+	def confclient(self, param):
+		return subprocess.Popen('./configer/confclient -p 99 -t Value -g %s' % param, shell=True, stdout = subprocess.PIPE)
 
-	flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
-	cdf_path = os.path.join(flash_base, model, 'etc', 'CDF.xml')
-	prefix_etc_path = os.path.join(flash_base, model)
+	def fetch_value(self, param):
 
-	configer = start_configer(cdf_path, prefix_etc_path)
+		ret = None
+		returncode = '' 
+		retry = 5
+		client = None
+		configer = None
 
-	while returncode != 0 and retry != 0:
-		confclient = start_confclient(param) 
-		confclient.wait()
-		returncode = confclient.returncode
-		retry = retry - 1
-		if retry == 0:
-			stop_configer(configer)
-			return None
-		#time.sleep(1)
+		configer = self.start()
 
-	for out in confclient.stdout: 	
-		out = re.sub('\n', '', out)
-		ret = out 
+		while returncode != 0 and retry != 0:
+			client = self.confclient(param) 
+			client.wait()
+			returncode = client.returncode
+			retry = retry - 1
+			if retry == 0:
+				self.stop(configer)
+				return None
+			#time.sleep(1)
 
-        stop_configer(configer)
+		for out in client.stdout: 	
+			out = re.sub('\n', '', out)
+			ret = out 
 
-	return ret
-	
+		self.stop(configer)
+
+		return ret
+
 
 # vim: tabstop=8 shiftwidth=8 softtabstop=8 noexpandtab
