@@ -125,7 +125,7 @@ class Configurator(object):
 				# initial internal parameter value
 				m = re.search('_', str(value))
 				if m:
-					dictp['value'] = configer(matrix['model']).fetch_value(str(value))
+					dictp['value'] = Configer(matrix['model']).fetch_value(str(value))
 				else:
 					dictp['value'] = value 
 

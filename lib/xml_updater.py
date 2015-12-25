@@ -125,22 +125,6 @@ class Base(object):
 				return int(c['value'])
 		return 3 
 
-
-	def check_cond(self, cond):
-
-		m = re.match('(.*)=(.*)', cond)
-		if m:
-			param = m.group(1)	
-			match = m.group(2)
-		else:
-			param = match = None
-
-		for content in self.matrix_contents:
-			if content['name'] == param and content['value'] == match:
-				return True
-
-		return False
-
 	def traverse(self, elem):
 		for node in elem.iter():
 			if node.text == None: 

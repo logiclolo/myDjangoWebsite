@@ -9,7 +9,7 @@ import signal
 import getpass
 import time
 
-class configer(object):
+class Configer(object):
 
 	def __init__(self, model):
 		flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
