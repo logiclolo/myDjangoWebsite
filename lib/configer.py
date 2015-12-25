@@ -20,9 +20,9 @@ class configer(object):
 		ld_library_path = os.path.join(os.getcwd(), 'configer', 'lib') 
 		env = dict(os.environ)
 		env['LD_LIBRARY_PATH'] = ld_library_path
+
 		#p = subprocess.Popen('LD_LIBRARY_PATH=%s ./configer/configer -d -i %s -e %s' % (ld_library_path, self.cdf, self.prefix_etc), shell=True)
 		p = subprocess.Popen(('./configer/configer', '-d', '-i', self.cdf, '-e', self.prefix_etc), env=env)
-		p.wait()
 
 		#print p.pid
 		return p
@@ -30,6 +30,8 @@ class configer(object):
 	def stop(self, subprocess_p):
 
 		# this can't terminate the configer process because of the wrong pid
+		# it need to be check
+
 		#subprocess_p.terminate()
 
 		# workaround
