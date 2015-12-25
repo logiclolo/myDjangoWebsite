@@ -2,6 +2,8 @@
 
 import sys, os
 import json
+import getopt
+import os.path
 from rule_parser import *
 from xml_updater import *
 
@@ -39,16 +41,38 @@ def check_envs():
 
 	return True
 
+def usage():
+	usage = 'Usage:%s -v http_api_version' % sys.argv[0] 
+
+	print usage
+
 if __name__ == '__main__':
 
+	opts, args = getopt.getopt(sys.argv[1:], "hv:" )
+
+	#print opts
+	for opt, arg in opts:
+		if opt in ('-v', ''):
+			version = arg 
+		if opt in ('-h', ''):
+			usage()
+			sys.exit(0)
+
+	if len(sys.argv) < 2:
+		usage()
+		sys.exit(0)
 
 	if not check_envs():
 		print 'Have you source the project devel file?'
 		sys.exit(1)
 
-	#obj = api_version_object('0301c.json') 
-	obj = api_version_object('0303a.json') 
-	#obj = api_version_object('0302b.json') 
+	path = './tpl/%s.json' % version
+
+	if not os.path.isfile(path):
+		print 'No %s.json found' % version 
+		sys.exit(0)
+
+	obj = api_version_object(path) 
 
 	print '#############################################'
 	print 'Begin to parse rule.json'
