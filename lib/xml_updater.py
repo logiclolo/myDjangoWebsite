@@ -8,14 +8,18 @@ from xml.dom import minidom
 from lxml import etree
 import subprocess
 import HTMLParser
+import bcolors
 from copy import deepcopy
 from configer import *
 from check_cond import *
+from evaluator import *
 
 if sys.version_info[:2] >= (2, 5):
 	import xml.etree.ElementTree as et 
 else:
 	import elementtree.ElementTree as et 
+
+debug = True 
 
 class Base(object):
 	confile = ''
@@ -63,67 +67,19 @@ class Base(object):
 		elements = self.matrix_action['element'] 
 
 		for element in elements:
-			xpath = element['param']
+			xpaths = element['param']
 			element['xpath'] = [] 
-			element['xpath'].append(deepcopy(xpath))
 
-			m = re.search('<.*>', xpath)
-			if m:
-				self.evaluate_param(element)
+			for xpath in xpaths.split('&'):
+				element['xpath'].append(deepcopy(xpath))
 
-	def evaluate_param(self, element):
+				m = re.search('<.*>', xpath)
+				if m:
+					#self.evaluate_param(element)
 
-		# find c<n>, s<n> or <..> 
-		# and replace the variable with real number/value
-		#
-		#
-		# The final result is saved to element['xpath']  
-		# and after that self.action() would use these detail
-
-		prog = re.compile('c<n>')
-		patterns = prog.findall(element['param'])
-		if len(patterns) > 0:
-			pattern = patterns[0]
-
-			tmp = []
-			for x in element['xpath']:
-				value = re.sub(pattern, 'c0', x)
-				tmp.append(value)
-			element['xpath'] = deepcopy(tmp)
-
-
-		prog = re.compile('s<m>')
-		patterns = prog.findall(element['param'])
-		if len(patterns) > 0:
-			nstream = self.find_stream_number()
-			pattern = patterns[0]
-
-			tmp = []
-			for x in element['xpath']:
-				for i in range(0, nstream):
-					value = re.sub(pattern, 's%d' % i, x)
-					tmp.append(value)
-			element['xpath'] = deepcopy(tmp)
-
-
-		m = re.search('<qid\[(\d+)\]\.val>', element['param'])
-		if m:
-			index = int(m.group(1))
-			number = self.matrix['answer'][index]
-			number = int(number)
-			tmp = []
-			for x in element['xpath']:
-				for i in range(0, number):
-					value = re.sub('<qid\[%d\].val>' % index, '%d' % i, x)
-					tmp.append(value)
-			element['xpath'] = deepcopy(tmp)
-
-	def find_stream_number(self):
-
-		for c in self.matrix['content']:
-			if c['name'] == 'TOTALSTREAMNUM':
-				return int(c['value'])
-		return 3 
+					# The final result is saved to element['xpath']  
+					# and after that self.action() would use these detail
+					element['xpath'] = Evaluator(xpath, element['xpath'], self.matrix['model'])()
 
 	def traverse(self, elem):
 		for node in elem.iter():
@@ -193,7 +149,7 @@ class Base(object):
 			if element.has_key('cond') and not check_cond(element['cond'], self.matrix): 
 				continue
 
-			stain = self.detail_action(et_object, element)
+			stain = stain | self.detail_action(et_object, element)
 
 		if stain:
 			content = self.prettify(et_root)
@@ -216,7 +172,7 @@ class Add(Base):
 		if et_new_node != None:
 			return True
 		else:
-			print '\'%s\' exists already !\n' % element['param']
+			print bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' exists already !' 
 			return False
 
 	def insert_new_xpath(self, et_object, element):
@@ -256,23 +212,26 @@ class Add(Base):
 			if m:
 				# default value
 				et_new_node.text = m.group(1) 
-				et_comment_node = et.Comment('[Notice] Please modify the default value below !!!')
+				#et_comment_node = et.Comment('[Notice] Please modify the default value below !!!')
+				et_comment_node = et.Comment('Modify it')
 				ori_object.append(et_comment_node)
 			else:
 				et_new_node.text = value 
 
 		# Handle CDF ...  
 		if element.has_key('check'):
-			check = str(element['check'])
+			check = element['check']
 			# <check>
 			if check != None and check != 'null':
+				check = str(check)
 				et_new_check_node = et.Element('check')
 
 				m = re.match('\?(.*)', check)
 				if m:
 					# default check value
 					et_new_check_node.text = m.group(1) 
-					et_comment_node = et.Comment('[Notice] Please modify the check value below !!!')
+					#et_comment_node = et.Comment('[Notice] Please modify the check value below !!!')
+					et_comment_node = et.Comment('Modify it')
 					et_new_node.append(et_comment_node)
 				else:
 					et_new_check_node.text = check
@@ -291,7 +250,7 @@ class Remove(Base):
 		if ret:
 			return True
 		else:
-			print '\'%s\' does not exist !\n' % element['param']
+			print bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' does not exist !' 
 			return False
 
 	def remove_xpath(self, et_object, element):
@@ -338,7 +297,7 @@ class Modify(Base):
 				stain = True
 
 		if not stain:
-			print '\'%s\' does not exist !\n' % element['param']
+			print bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' does not exist !' 
 
 		return stain
 
