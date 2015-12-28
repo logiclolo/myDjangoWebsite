@@ -79,7 +79,7 @@ class Base(object):
 
 					# The final result is saved to element['xpath']  
 					# and after that self.action() would use these detail
-					element['xpath'] = Evaluator(xpath, element['xpath'], self.matrix['model'])()
+					element['xpath'] = Evaluator(xpath, element['xpath'], self.matrix)()
 
 	def traverse(self, elem):
 		for node in elem.iter():
