@@ -282,22 +282,58 @@ class Modify(Base):
 			et_target_tag = et_object.find(xpath)
 
 			if et_target_tag is not None:
-
-				if element.has_key('value'):
-					et_target_tag.text = str(element['value']) 
-
-				if element.has_key('check'):
-					et_child_tag = et_target_tag.find('check')
-					if et_child_tag != None: 
-						et_child_tag.text = str(element['check'])
-
-				#et_target_tag.set('update', 'yes')
+				self.handle_last_node(et_target_tag, element)
 				stain = True
 
 		if not stain:
 			print bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' does not exist !' 
 
 		return stain
+
+	def handle_last_node(self, et_target_tag, element):
+		# Handle ordinary config
+		if element.has_key('value'):
+				value = str(element['check'])
+				et_target_tag.text = value 
+
+		# Handle CDF
+		if element.has_key('check'):
+			et_child_tag = et_target_tag.find('check')
+
+			if et_child_tag != None: 
+				value = str(element['check'])
+
+				# if value start with '+' or '-'
+				m1 = re.match('\+(.*)', value)
+				m2 = re.match('\-(.*)', value)
+				if m1:
+					self.insert_sub_text(et_child_tag, m1.group(1))
+				elif m2:
+					self.remove_sub_text(et_child_tag, m2.group(1))
+				else:	
+					et_child_tag.text = value 
+
+	def insert_sub_text(self, et_child_tag, sub_text):
+		subs = []
+		text = et_child_tag.text
+		m = re.search('(".*").*"(.*)"', text)
+		if m:
+			subs = m.group(2).split(',')
+			subs.append(sub_text)
+			value = m.group(1) + ',"' + ','.join(subs) + '"'
+			et_child_tag.text = value
+
+
+	def remove_sub_text(self, et_child_tag, sub_text):
+		subs = []
+		text = et_child_tag.text
+		m = re.search('(".*").*"(.*)"', text)
+		if m:
+			subs = m.group(2).split(',')
+			if sub_text in subs:
+				subs.remove(sub_text)
+			value = m.group(1) + ',"' + ','.join(subs) + '"'
+			et_child_tag.text = value
 
 
 class CommentedTreeBuilder ( et.XMLTreeBuilder ):
