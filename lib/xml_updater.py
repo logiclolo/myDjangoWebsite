@@ -293,7 +293,7 @@ class Modify(Base):
 	def handle_last_node(self, et_target_tag, element):
 		# Handle ordinary config
 		if element.has_key('value'):
-				value = str(element['check'])
+				value = str(element['value'])
 				et_target_tag.text = value 
 
 		# Handle CDF
