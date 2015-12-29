@@ -39,7 +39,7 @@ class Evaluator(object):
 	def eval_qid_answer(self, match):
 		xpath = self.xpath
 
-		index = int(match.group(1))
+		index = int(match)
 		number = self.matrix['answer'][index]
 		number = int(number)
 
