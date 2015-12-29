@@ -75,9 +75,7 @@ class Base(object):
 
 				m = re.search('<.*>', xpath)
 				if m:
-					#self.evaluate_param(element)
-
-					# The final result is saved to element['xpath']  
+					# The evaluated result is saved to element['xpath']  
 					# and after that self.action() would use these detail
 					element['xpath'] = Evaluator(xpath, element['xpath'], self.matrix)()
 

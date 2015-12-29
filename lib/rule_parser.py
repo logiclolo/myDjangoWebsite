@@ -105,33 +105,23 @@ class Configurator(object):
 			tmp['answer'] = ['']*20 # initial the list with null 
 			self.matrix.append(deepcopy(tmp))
 
-	def handle_detail_common_rule(self, matrix, content, index):
+	def handle_detail_common_rule(self, matrix, content):
 
 		rules = content['rule']
 		name = content['param']
 
 		for rule in rules:
 			if check_cond(rule['cond'], matrix):
-				matrix['content'][index]['value'] = rule['value']
+				matrix['content'][name] = rule['value']
 				break
 
-	def compose_dict_in_list(self, names, matrix):
-		listp = []
-		dictp = {}
-		for name in names:
-			for key, value in name.iteritems():
-				dictp['name'] = key
-
-				# initial internal parameter value
-				m = re.search('_', str(value))
-				if m:
-					dictp['value'] = Configer(matrix['model']).fetch_value(str(value))
-				else:
-					dictp['value'] = value 
-
-			listp.append(deepcopy(dictp))	
-
-		return deepcopy(listp)
+	def compose_internal_param_dict(self, name, matrix):
+		for key, value in name.iteritems():
+			m = re.search('_', str(value))
+			if m:
+				value = Configer(matrix['model']).fetch_value(str(value))
+				name[key] = value
+		return deepcopy(name)
 
 	def parse_common_rule(self):
 		data = open(self.common_rule).read()  
@@ -142,13 +132,9 @@ class Configurator(object):
 
 		# parse rule.json and save the info to matrix 
 		for m in self.matrix:
-			m['content'] = self.compose_dict_in_list(jdata['name'], m)
+			m['content'] = self.compose_internal_param_dict(jdata['name'], m)
 			for content in jdata['content']:
-				# the index is for self.matrix[model]['content'][index]
-				# and it would be used after the condition is matched
-				index = jdata['content'].index(content)
-
-				self.handle_detail_common_rule(m, content, index)
+				self.handle_detail_common_rule(m, content)
 
 
 		if debug:

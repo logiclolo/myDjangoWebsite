@@ -4,8 +4,9 @@ import sys, os
 import re 
 import json
 from configer import *
+from evaluator import *
 
-debug = False 
+debug = True 
 
 def check_cond(cond, matrix):
 
@@ -41,15 +42,15 @@ def check_detail_cond(cond, matrix):
 
 	param = ''
 	match = ''
+	value = None 
 	model = matrix['model']
 
 	flag = True 
-	value = None
 
 	cond = re.sub("'", "", cond)
 
 	# eg. qid[1].val=1
-	m = re.match('qid\[(.*)\].*=(.*)', cond)
+	m = re.match('qid\[([^!]+)\].val=([^!]+)', cond)
 	if m:
 		answer = matrix['answer']
 		qid = int(m.group(1))
@@ -57,10 +58,21 @@ def check_detail_cond(cond, matrix):
 
 		if qid > len(answer): 
 			return False
-		elif answer[qid] == match:
-			return True
 		else:
+			value = answer[qid] 
+
+	m = re.match('qid\[(.*)\].*!=(.*)', cond)
+	if m:
+		answer = matrix['answer']
+		qid = int(m.group(1))
+		match = m.group(2)
+
+		flag = False 
+
+		if qid > len(answer): 
 			return False
+		else:
+			value = answer[qid] 
 			
 
 	# eg. 'FD' in 'system_info_extendedmodelname'
@@ -83,18 +95,22 @@ def check_detail_cond(cond, matrix):
 		param = m.group(1)	
 		match = m.group(2)
 
-	# use configer to fetch the parameter value
-	if param != '':
-		value = Configer(model).fetch_value(param)
 
+	# evaluate the param if needed
+	tmp = Evaluator(param, [param], matrix)()	
+	param = tmp[0]
+
+
+	# use configer to fetch the parameter value
+	if param != '' and value == None:
+		value = Configer(model).fetch_value(param)
 
 
 	# if the value is None, it means that the parameter is not maintained by configer
 	# it would be CAMERA_MODEL, CAMERA_TYPE ... 
 	if value == None:
-		for m in matrix['content']:
-			if m['name'] == param:
-				value = m['value']	
+		if param in matrix['content'].keys():
+			value = matrix['content'][param]
 				
 	if debug:
 		print '\n----------- check condition -------------'
