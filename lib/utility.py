@@ -70,8 +70,10 @@ def choose_model(model_file):
 		print 'No models. Please modify \'%s\'' % model_file	
 		sys.exit(0)
 
+	print bcolors.WARNING
 	print 'Modify \'%s\' if you want to change models' % model_file
 	print 'Press any key to continue or \'q\' to exit ...'
+	print bcolors.NORMAL
 
 	ans = getch()
 	if ans == 'q':
