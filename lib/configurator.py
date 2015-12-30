@@ -7,35 +7,16 @@ import os.path
 from rule_parser import *
 from xml_updater import *
 from utility import *
+from action_dispatcher import *
 
-def output(filename, content):
-	try:
-		outh = open(filename,'w')
-	except IOError, e:
-		print e
-
-	outh.write(content)
-
-def do_action(action, md, model_matrix):
-	obj = md(action, model_matrix)
-	ret = obj.action()
-
-	return ret
-
-def action_dispatch(model_matrix):
-	for action in model_matrix['action']:
-		if action['method'] == 'add':
-			do_action(action, Add, model_matrix)
-		elif action['method'] == 'remove':
-			do_action(action, Remove, model_matrix)
-		elif action['method'] == 'modify':
-			do_action(action, Modify, model_matrix)
-
+def action_dispatch(matrix):
+	for action in matrix['action']:
+		Dispatcher(action, matrix)
 
 def update_config(matrix):
-	for model_matrix in matrix:
-		print bcolors.BLUE + 'handle %s ...' % model_matrix['model'] + bcolors.NORMAL
-		action_dispatch(model_matrix)
+	for m in matrix:
+		print bcolors.BLUE + 'handle %s ...' % m['model'] + bcolors.NORMAL
+		action_dispatch(m)
 
 def check_envs():
 	if not os.getenv('PRODUCTDIR'):
@@ -77,6 +58,7 @@ if __name__ == '__main__':
 
 	obj = Configurator(path, model) 
 
+	print '\n'
 	print '#############################################'
 	print 'Parsing rule.json ...' 
 	print '#############################################'

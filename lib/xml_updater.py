@@ -19,7 +19,8 @@ if sys.version_info[:2] >= (2, 5):
 else:
 	import elementtree.ElementTree as et 
 
-debug = True 
+#debug = True 
+debug = False 
 
 class Base(object):
 	confile = ''
@@ -29,19 +30,15 @@ class Base(object):
 	matrix_contents = []
 	matrix_model = ''
 
-	def __init__(self, action, matrix):
-		self.confile = action['file']
-		self.method = action['method']
+	def __init__(self, et_object, elements, matrix):
 		self.matrix = matrix
-		self.matrix_action = action
-		self.matrix_contents = matrix['content'] 
-		self.matrix_model = matrix['model'] 
+		self.elements = elements
+		self.et_object = et_object
 
-		self.locate_config()
 		self.compose_detail_action()
 
 		if debug:
-			print json.dumps(self.matrix_action, indent=4, sort_keys=True)
+			print json.dumps(self.elements, indent=4, sort_keys=True)
 
 	def locate_config(self):
 
@@ -61,10 +58,9 @@ class Base(object):
 				p = re.sub('\n', '', p)
 				self.matrix_action['path'] = p
 
-
 	def compose_detail_action(self):
 
-		elements = self.matrix_action['element'] 
+		elements = self.elements
 
 		for element in elements:
 			xpaths = element['param']
@@ -79,81 +75,18 @@ class Base(object):
 					# and after that self.action() would use these detail
 					element['xpath'] = Evaluator(xpath, element['xpath'], self.matrix)()
 
-	def traverse(self, elem):
-		for node in elem.iter():
-			if node.text == None: 
-				node.text = '' 
-				print node
-
-	def prettify(self, elem):
-		# Return a pretty-printed XML string for the Element.
-		rough_string = et.tostring(elem, encoding='utf-8')
-		reparsed = minidom.parseString(rough_string)
-		tmp = reparsed.toprettyxml(indent="\t")
-		
-		# remove the redundant line
-		tmp = re.sub('(\t+\s*\n+)+', '', tmp) 
-
-
-		# handle different situation under CDF and config
-		# It's a workaround ... need more good solution
-		if re.search('CDF', self.matrix_action['path']):
-			tmp = re.sub('<\?.*\?>', '<?xml version="1.0" encoding="UTF-8"?>', tmp)
-			tmp = re.sub('<root>', '<root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">', tmp)
-		else:
-			# replace <tag/> with <tag></tag>
-			tmp = re.sub('<\?.*\?>\n', '', tmp)
-			tmp = re.sub(r'<(.*)/>', r'<\1></\1>', tmp)
-
-
-		# handle the escape
-		# eg. &quot, &lt, &gt
-		h = HTMLParser.HTMLParser()
-		xml_content = h.unescape(tmp)
-
-		return xml_content 
-
-	def output(self, filename, content):
-		try:
-			outh = open(filename,'w')
-		except IOError, e:
-			print e
-
-		outh.write(content)
-
-	def find_index(self, target_list, aim):
-		for target in target_list:
-			if target['path'] == aim:
-				return target_list.index(target)
-
-		return None
-
 	def action(self):
 
 		stain = False 
 
-		path = self.matrix_action['path']
-		elements = self.matrix_action['element']
-
-		if path != '':
-			print path
-			et_object = et.parse(path, CommentedTreeBuilder())
-			et_root = et_object.getroot()
-		else:
-			return False
-
+		elements = self.elements
+		et_object = self.et_object
 
 		for element in elements:
 			if element.has_key('cond') and not check_cond(element['cond'], self.matrix): 
 				continue
 
 			stain = stain | self.detail_action(et_object, element)
-
-		if stain:
-			content = self.prettify(et_root)
-			self.output(path, content)
-		#else:
-			#print 'The param is exist or absent. Please check yourself.'
 
 		if stain:
 			return True 
@@ -170,7 +103,7 @@ class Add(Base):
 		if et_new_node != None:
 			return True
 		else:
-			print bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' exists already !' 
+			print '\t' + bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' exists already !' 
 			return False
 
 	def insert_new_xpath(self, et_object, element):
@@ -248,7 +181,7 @@ class Remove(Base):
 		if ret:
 			return True
 		else:
-			print bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' does not exist !' 
+			print '\t' + bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' does not exist !' 
 			return False
 
 	def remove_xpath(self, et_object, element):
@@ -286,7 +219,7 @@ class Modify(Base):
 				stain = True
 
 		if not stain:
-			print bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' does not exist !' 
+			print '\t' + bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' does not exist !' 
 
 		return stain
 
