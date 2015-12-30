@@ -102,7 +102,7 @@ class RuleParser(object):
 			tmp['model'] = model
 			tmp['action'] = [] 
 			tmp['content'] = [] 
-			tmp['answer'] = ['']*20 # initial the list with null 
+			tmp['answer'] = {} 
 			self.matrix.append(deepcopy(tmp))
 
 	def handle_detail_common_rule(self, matrix, content):

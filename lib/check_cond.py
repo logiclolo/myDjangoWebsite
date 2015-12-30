@@ -50,17 +50,19 @@ def check_detail_cond(cond, matrix):
 	cond = re.sub("'", "", cond)
 
 	# eg. qid[1].val=1
-	m = re.match('qid\[([^!]+)\].val=([^!]+)', cond)
+	m = re.match('qid\[([^!]+)\].*=([^!]+)', cond)
 	if m:
 		answer = matrix['answer']
 		qid = int(m.group(1))
 		match = m.group(2)
 
-		if qid > len(answer): 
-			return False
+		if answer.has_key(qid):
+			value = answer[qid]
 		else:
-			value = answer[qid] 
+			return False
 
+
+	# eg. qid[1].val!=1
 	m = re.match('qid\[(.*)\].*!=(.*)', cond)
 	if m:
 		answer = matrix['answer']
@@ -69,10 +71,10 @@ def check_detail_cond(cond, matrix):
 
 		flag = False 
 
-		if qid > len(answer): 
-			return False
+		if answer.has_key(qid):
+			value = answer[qid]
 		else:
-			value = answer[qid] 
+			return False
 			
 
 	# eg. 'FD' in 'system_info_extendedmodelname'

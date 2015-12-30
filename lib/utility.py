@@ -15,7 +15,7 @@ def output(filename, content):
 
 	outh.write(content)
 
-def avaiable_model():
+def available_model():
 	tmp = []
 	capability = 'config_capability.xml'
 
@@ -52,7 +52,7 @@ def choose_model(model_file):
 			print e
 			sys.exit(1)
 	else:
-		model = avaiable_model()
+		model = available_model()
 
 		tmp = ''
 		for m in model:
