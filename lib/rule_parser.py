@@ -19,7 +19,7 @@ if sys.version_info[:2] >= (2, 5):
 else:
 	import elementtree.ElementTree as et 
 
-class Configurator(object): 
+class RuleParser(object): 
 	version = '' 
 	api_rule = ''
 	common_rule = ''

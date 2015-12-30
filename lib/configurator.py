@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
 	model = choose_model('sourceme')
 
-	obj = Configurator(path, model) 
+	obj = RuleParser(path, model) 
 
 	print '\n'
 	print '#############################################'
