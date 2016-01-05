@@ -58,7 +58,6 @@ if __name__ == '__main__':
 
 	obj = RuleParser(path, model) 
 
-	print '\n'
 	print '#############################################'
 	print 'Parsing rule.json ...' 
 	print '#############################################'

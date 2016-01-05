@@ -65,8 +65,40 @@ class Evaluator(object):
 			self.xpath = deepcopy(tmp)
 
 
+	def eval_external_cdf_xpath(self):
+		# remove the first node of the xpath
+
+		xpath = self.xpath
+		tmp = []
+
+		for x in xpath:
+			sub = x.split('_')
+			sub = sub[1:]
+
+			tmp.append('_'.join(sub))
+
+		self.xpath = deepcopy(tmp)
+
+
 	def __call__(self):
 		param = self.param
+
+		if self.matrix.has_key('path'):
+			basename = os.path.basename(self.matrix['path'])
+		else:
+			basename = ''
+
+
+		# special case:
+		#
+		# some CDF has no <root> in xml tree
+		# such like CDF_motion.xml, CDF_vadp.xml ....
+		# we remove the first node of xpath 
+		# so that it can be handled by xml element tree 
+		m = re.search('CDF_.*', basename)
+		if m:
+			self.eval_external_cdf_xpath()
+
 		m = re.search('<n>', param)
 		if m:
 			self.eval_channel_number()	

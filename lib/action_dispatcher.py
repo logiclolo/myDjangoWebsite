@@ -101,7 +101,7 @@ class XmlWriter(object):
 
 		# handle different situation under CDF and config
 		# It's a workaround ... need more good solution
-		if re.search('CDF', path):
+		if os.path.basename(path) == 'CDF.xml':
 			tmp = re.sub('<\?.*\?>', '<?xml version="1.0" encoding="UTF-8"?>', tmp)
 			tmp = re.sub('<root>', '<root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">', tmp)
 		else:
