@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import sys, os
-import re 
+import re
 import json
 from pprint import pprint
 from xml.dom import minidom
@@ -15,21 +15,21 @@ from check_cond import *
 from info_collector import *
 
 if sys.version_info[:2] >= (2, 5):
-	import xml.etree.ElementTree as et 
+	import xml.etree.ElementTree as et
 else:
-	import elementtree.ElementTree as et 
+	import elementtree.ElementTree as et
 
-class RuleParser(object): 
-	version = '' 
+class RuleParser(object):
+	version = ''
 	api_rule = ''
 	common_rule = ''
 	actions = []
 	config_path = []
-	matrix = [] 
+	matrix = []
 
 	def __init__(self, path, models):
 		self.api_rule = path
-		self.common_rule = './tpl/rule.json'
+		self.common_rule = './api/rule.json'
 		self.models = models
 
 		self.initial_matrix()
@@ -58,20 +58,20 @@ class RuleParser(object):
 		else:
 			print 'Wrong selection. Please input again.'
 			return False
-		
+
 
 	def ask_user(self, question, matrix):
 		if check_cond(question['cond'], matrix):
 			ques = question['ask']
 
-			print '\nPlease answer the questions based on \'%s\' ...' % matrix['model'] 
+			print '\nPlease answer the questions based on \'%s\' ...' % matrix['model']
 			print bcolors.WARNING + ques + bcolors.NORMAL
 			if question.has_key('range'):
-				print '(range is %s)' % question['range'] 
+				print '(range is %s)' % question['range']
 			ans = raw_input()
 			while not self.check_answer(ques, ans):
 				ans = raw_input()
-			
+
 			#question['ans'] = ans
 			qid = question['id']
 			matrix['answer'][qid] = ans
@@ -83,26 +83,26 @@ class RuleParser(object):
 		# The matrix contains the main infomation we need
 		# and the length of matrix is 'numbers of model'
 		#
-		# What initial_matrix() does: 
+		# What initial_matrix() does:
 		#
 		# (1) get model name
 		#
 		# (2) action list
-		# It saves the result after parsing the 'api_version.json' 
-		# Just initial here 
-		# 
+		# It saves the result after parsing the 'api_version.json'
+		# Just initial here
+		#
 		# (3) content list
 		# It saves the result after parsing rule.json
 		#
 		# (4) answer list
-		# The replies answerd by the user  
+		# The replies answerd by the user
 
-		tmp = {} 
+		tmp = {}
 		for model in self.models:
 			tmp['model'] = model
-			tmp['action'] = [] 
-			tmp['content'] = [] 
-			tmp['answer'] = {} 
+			tmp['action'] = []
+			tmp['content'] = []
+			tmp['answer'] = {}
 			self.matrix.append(deepcopy(tmp))
 
 	def handle_detail_common_rule(self, matrix, content):
@@ -124,13 +124,13 @@ class RuleParser(object):
 		return deepcopy(name)
 
 	def parse_common_rule(self):
-		data = open(self.common_rule).read()  
+		data = open(self.common_rule).read()
 		jdata = json.loads(data)
 
 		if not jdata.has_key('name') and not jdata.has_key('content'):
 			error_msg()
 
-		# parse rule.json and save the info to matrix 
+		# parse rule.json and save the info to matrix
 		for m in self.matrix:
 			m['content'] = self.compose_internal_param_dict(jdata['name'], m)
 			for content in jdata['content']:
@@ -142,7 +142,7 @@ class RuleParser(object):
 			print '\n\n'
 
 	def parse_api_rule(self):
-		data = open(self.api_rule).read()  
+		data = open(self.api_rule).read()
 		jdata = json.loads(data)
 
 		if not jdata.has_key('version') and not jdata.has_key('content'):
@@ -155,8 +155,8 @@ class RuleParser(object):
 		#InfoCollector(self.matrix, specs).main()
 		#sys.exit(0)
 
-		# compose the self.matrix 
-		# which contains all the information we need 
+		# compose the self.matrix
+		# which contains all the information we need
 		for m in self.matrix:
 			self.parse_detail_api_rule(m, specs)
 
@@ -176,12 +176,12 @@ class RuleParser(object):
 			if spec.has_key('task'):
 				tasks = spec['task']
 
-			for question in questions: 
+			for question in questions:
 				self.ask_user(question, matrix)
 
-			for task in tasks: 
+			for task in tasks:
 				if check_cond(task['cond'], matrix):
-					matrix['action'] = matrix['action'] + task['action'] 
+					matrix['action'] = matrix['action'] + task['action']
 
 
 

@@ -25,7 +25,7 @@ def check_envs():
 	return True
 
 def usage():
-	usage = 'Usage:%s -v http_api_version' % sys.argv[0] 
+	usage = 'Usage:%s -v http_api_version' % sys.argv[0]
 
 	print usage
 
@@ -36,7 +36,7 @@ if __name__ == '__main__':
 	#print opts
 	for opt, arg in opts:
 		if opt in ('-v', ''):
-			version = arg 
+			version = arg
 		if opt in ('-h', ''):
 			usage()
 			sys.exit(0)
@@ -49,17 +49,17 @@ if __name__ == '__main__':
 		print 'Have you source the project devel file?'
 		sys.exit(1)
 
-	path = './tpl/%s.json' % version
+	path = './api/%s.json' % version
 	if not os.path.isfile(path):
-		print 'No %s.json found' % version 
+		print 'No %s.json found' % version
 		sys.exit(0)
 
 	model = choose_model('sourceme')
 
-	obj = RuleParser(path, model) 
+	obj = RuleParser(path, model)
 
 	print '#############################################'
-	print 'Parsing rule.json ...' 
+	print 'Parsing rule.json ...'
 	print '#############################################'
 	obj.parse_common_rule()
 

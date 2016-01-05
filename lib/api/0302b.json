@@ -1,0 +1,89 @@
+{
+	"version": "0302b",
+	"content": {
+		"spec": [
+			{
+				"type": "camera unit",
+				"task": [
+					{
+						"cond": true,
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_videoin_c<n>_cameraunit_name",
+												"check": null
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_videomode_c0.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"cond": "CAMERA_TYPE=VC",
+												"param": "capability_videoin_c<n>_cameraunit_name",
+												"value": "?-"
+											},
+											{
+												"cond": "CAMERA_TYPE!=VC",
+												"param": "capability_videoin_c<n>_cameraunit_name",
+												"value": "-"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"type": "motion algorithm",
+				"task": [
+					{
+						"cond": true,
+						"action": [
+							{
+								"file": "CDF_motion.xml",
+								"content": [
+									{
+										"method": "modify",
+										"element": [
+											{
+												"param": "motion_c<n>_algorithm",
+												"check": "\"%e\",\"motion,motion2,advmotion\""
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_motion_c0.xml",
+								"content": [
+									{
+										"method": "modify",
+										"element": [
+											{
+												"param": "motion_c<n>_algorithm",
+												"value": "advmotion"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			}
+		]
+	}
+}

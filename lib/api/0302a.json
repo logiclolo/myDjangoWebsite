@@ -1,0 +1,1031 @@
+{
+	"version": "0302a",
+	"content": {
+		"spec": [
+			{
+				"type": "DIS/EIS/OIS spec",
+				"ques": [
+					{
+						"cond": true,
+						"ask": "support DIS/EIS/OIS spec or not? (1)support DIS (2)support EIS (3)support OIS (4) not support all features",
+						"id": 1
+					}
+				],
+				"task": [
+					{
+						"cond": "qid[1].val!=4",
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_image_c<n>_is_mode&capability_image_c<n>_is_strength&capability_image_c<n>_is_supportlevel&capability_image_c<n>_is_affect",
+												"check": null
+											},
+											{
+												"cond":"qid[1].val=1",
+												"param": "image_c<n>_dis_mode&image_c<n>_profile_i<TOTALPROFILENUM>_dis_mode",
+												"check": "\"%d\",\"0~1\""
+											},
+											{
+												"cond":"qid[1].val=1",
+												"param": "image_c<n>_dis_strength&image_c<n>_profile_i<TOTALPROFILENUM>_dis_strength",
+												"check": "\"%d\",\"1~100\""
+											},
+											{
+												"cond":"qid[1].val=2",
+												"param": "image_c<n>_eis_mode&image_c<n>_profile_i<TOTALPROFILENUM>_eis_mode",
+												"check": "\"%d\",\"0~1\""
+											},
+											{
+												"cond":"qid[1].val=2",
+												"param": "image_c<n>_eis_strength&image_c<n>_profile_i<TOTALPROFILENUM>_eis_strength",
+												"check": "\"%d\",\"1~100\""
+											},
+											{
+												"cond":"qid[1].val=3",
+												"param": "image_c<n>_ois_mode&image_c<n>_profile_i<TOTALPROFILENUM>_ois_mode",
+												"check": "\"%d\",\"0~1\""
+											},
+											{
+												"cond":"qid[1].val=3&image_c<n>_profile_i<TOTALPROFILENUM>_ois_strength",
+												"param": "image_c<n>_ois_strength",
+												"check": "\"%d\",\"1~100\""
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_imagefeature.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"cond":"qid[1].val=1",
+												"param": "capability_image_c<n>_is_mode",
+												"value": "dis"
+											},
+											{
+												"cond":"qid[1].val=2",
+												"param": "capability_image_c<n>_is_mode",
+												"value": "eis"
+											},
+											{
+												"cond":"qid[1].val=3",
+												"param": "capability_image_c<n>_is_mode",
+												"value": "ois"
+											},
+											{
+												"param": "capability_image_c<n>_is_strength&capability_image_c<n>_is_supportlevel",
+												"value": "?0"
+											},
+											{
+												"param": "capability_image_c<n>_is_affect",
+												"value": "?-"
+											},
+											{
+												"cond": "qid[1].val!=2",
+												"param": "capability_image_c<n>_eis",
+												"value": 0
+											},
+											{
+												"cond": "qid[1].val=2",
+												"param": "capability_image_c<n>_eis",
+												"value": 1
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_image_c0.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"cond":"qid[1].val=1",
+												"param": "image_c<n>_dis_mode&image_c<n>_profile_i<TOTALPROFILENUM>_dis_mode",
+												"value": "?0"
+											},
+											{
+												"cond":"qid[1].val=1",
+												"param": "image_c<n>_dis_strength&image_c<n>_profile_i<TOTALPROFILENUM>_dis_strength",
+												"value": "?1"
+											},
+											{
+												"cond":"qid[1].val=2",
+												"param": "image_c<n>_eis_mode&image_c<n>_profile_i<TOTALPROFILENUM>_eis_mode",
+												"value": "?0"
+											},
+											{
+												"cond":"qid[1].val=2",
+												"param": "image_c<n>_eis_strength&image_c<n>_profile_i<TOTALPROFILENUM>_eis_strength",
+												"value": "?1"
+											},
+											{
+												"cond":"qid[1].val=3",
+												"param": "image_c<n>_ois_mode&image_c<n>_profile_i<TOTALPROFILENUM>_ois_mode",
+												"value": "?0"
+											},
+											{
+												"cond":"qid[1].val=3",
+												"param": "image_c<n>_ois_strength&image_c<n>_profile_i<TOTALPROFILENUM>_ois_strength",
+												"value": "?1"
+											}
+										]
+									}
+								]
+							}
+						]
+					},
+					{
+						"cond": "qid[1].val=4",
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_image_c<n>_is_mode",
+												"check": null
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_imagefeature.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_image_c<n>_is_mode",
+												"value": "-"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"type": "Wiper/Water Spray/Heater Control/Image freeze spec",
+				"ques": [
+					{
+						"cond": true,
+						"ask": "support Wiper/Water Spray spec or not? (1)support Wiper (2)support Water Spray (3)support all features (4) not support all features",
+						"id": 2
+					},
+					{
+						"cond": "capability_thermal_support=1",
+						"ask": "support Heater Control(manually) spec or not? (1)Yes (2)No",
+						"id": 3
+					},
+					{
+						"cond": "CAMERA_MODEL=SD",
+						"ask": "support Image freeze spec or not? (1)Yes (2)No",
+						"id": 4
+					}
+				],
+				"task": [
+					{
+						"cond": "qid[2].val=4",
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_peripheral_c<n>_waterspray_support&capability_peripheral_c<n>_wiper_support&capability_image_c<n>_freeze",
+												"check": null
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_capability.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_peripheral_c<n>_waterspray_support&capability_peripheral_c<n>_wiper_support",
+												"value": 0
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_imagefeature.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_image_c<n>_freeze",
+												"value": 0
+											}
+										]
+									}
+								]
+							}
+						]
+					},
+					{
+						"cond": "capability_thermal_support=1",
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_thermal_controlmode",
+												"check": null
+											},
+											{
+												"cond": "qid[4].val=1",
+												"param": "image_c<n>_freeze",
+												"check": "\"%d\", \"0~1\""
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_capability.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"cond": "qid[3].val=1",
+												"param": "capability_thermal_controlmode",
+												"value": "auto,customheater"
+											},
+											{
+												"cond": "qid[3].val=2",
+												"param": "capability_thermal_controlmode",
+												"value": "auto"
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_imagefeature.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"cond": "qid[4].val=1",
+												"param": "capability_image_c<n>_freeze",
+												"value": 1
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_image_c0.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"cond": "qid[4].val=1",
+												"param": "image_c<n>_freeze",
+												"value": "?1"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"type": "Switch to B/W in night mode",
+				"task": [
+					{
+						"cond": true,
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_daynight_c<n>_blackwhitemode",
+												"check": null
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_daynightfeature.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"cond": "capability_daynight_c<n>_support=0 || CAMERA_MODEL=SD",
+												"param": "capability_daynight_c<n>_blackwhitemode",
+												"value": 0
+											},
+											{
+												"cond": "capability_daynight_c<n>_support=1 && CAMERA_MODEL!=SD",
+												"param": "capability_daynight_c<n>_blackwhitemode",
+												"value": 1
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"type": "Sensitivity of IR cut filter",
+				"ques": [
+					{
+						"cond": "capability_daynight_c<n>_support=1",
+						"ask": "the web UI design of IR cut filter sensitivity is slider bar? (1)Yes (2)No",
+						"id": 5
+					}
+				],
+				"task": [
+					{
+						"cond": "capability_daynight_c<n>_support=1",
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_daynight_c<n>_ircutsensitivity_type&capability_daynight_c<n>_ircutsensitivity_supportlevel",
+												"check": null
+											}
+										]
+									},
+									{
+										"method": "modify",
+										"element": [
+											{
+												"cond": "qid[5].val=1",
+												"param": "ircutcontrol_sensitivity",
+												"check": "\"%d\",\"1~100\""
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_daynightfeature.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"cond": "qid[5].val=1",
+												"param": "capability_daynight_c<n>_ircutsensitivity_type",
+												"value": "normalize"
+											},
+											{
+												"cond": "qid[5].val=0",
+												"param": "capability_daynight_c<n>_ircutsensitivity_type",
+												"value": "options"
+											},
+											{
+												"cond": "qid[5].val=1",
+												"param": "capability_daynight_c<n>_ircutsensitivity_supportlevel",
+												"value": "?3"
+											},
+											{
+												"cond": "qid[5].val=0",
+												"param": "capability_daynight_c<n>_ircutsensitivity_supportlevel",
+												"value": 3
+											}
+										]
+									}
+								]	
+							},
+							{
+								"file": "config_ircutctrl.xml",
+								"content": [
+									{
+										"method": "modify",
+										"element": [
+											{
+												"cond": "qid[5].val=1",
+												"param": "ircutcontrol_sensitivity",
+												"value": "?51"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"type": "Smart SD spec",
+				"ques": [
+					{
+						"cond": true,
+						"ask": "support Smart SD spec or not? (1)Yes (2)No",
+						"id": 6
+					}
+				],
+				"task": [
+					{
+						"cond": true,
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_localstorage_smartsd",
+												"check": null
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_capability.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"cond": "qid[6].val=1",
+												"param": "capability_localstorage_smartsd",
+												"value": 1
+											},
+											{
+												"cond": "qid[6].val=2",
+												"param": "capability_localstorage_smartsd",
+												"value": 0
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"type": "Sensor type",
+				"ques": [
+					{
+						"cond": true,
+						"ask": "what the sensor type support in your product? (1)raw sensor(ex: standard camera or SD8161) (2)smart sensor",
+						"id": 7
+					}
+				],
+				"task": [
+					{
+						"cond": true,
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_image_c<n>_sensortype",
+												"check": null
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "capability_image_c<n>_smartsensor_iristotalrange",
+												"check": null
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_imagefeature.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"cond": "qid[7].val=1",
+												"param": "capability_image_c<n>_sensortype",
+												"value": "rawsensor"
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "capability_image_c<n>_sensortype",
+												"value": "smartsensor"
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "capability_image_c<n>_smartsensor_iristotalrange",
+												"value": "?F14,F11,F9.6,F8.0,F6.8,F5.6,F4.8,F4.0,F3.4,F2.8,F2.4,F2.0,F1.6"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"type": "White balance mode",
+				"ques": [
+					{
+						"cond": true,
+						"ask": "support the powerful Zoom module(ex: SD/IZ series) or not? (1)Yes (2)No",
+						"id": 8
+					}
+				],
+				"task": [
+					{
+						"cond": "qid[8].val=1",
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "modify",
+										"element": [
+											{
+												"param": "videoin_c<n>_whitebalance",
+												"check": "?\"%e\",\"auto,widerange,outdoor,indoor,sodiumauto,manual,rbgain\""
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_imagefeature.xml",
+								"content": [
+									{
+										"method": "modify",
+										"element": [
+											{
+												"param": "capability_image_c<n>_wbmode",
+												"value": "?auto,widerange,outdoor,indoor,sodiumauto,manual,rbgain"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"type": "Exposure spec",
+				"task": [
+					{
+						"cond": true,
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_image_c<n>_exposure_modetype&capability_image_c<n>_exposure_rangetype&capability_image_c<n>_exposure_automode_affect&capability_image_c<n>_exposure_manualmode_affect",
+												"check": null
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "capability_image_c<n>_exposure_shuttervaluetype&capability_image_c<n>_exposure_gainvaluetype&capability_image_c<n>_exposure_shutterprioritymode_affect&capability_image_c<n>_exposure_irisprioritymode_affect",
+												"check": null
+											},
+											{
+												"cond": "qid[7].val=1",
+												"param": "videoin_c<n>_exposuremode&videoin_c<n>_profile_i<TOTALPROFILENUM>_exposuremode",
+												"check": "\"%e\",\"auto,manual\""
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "videoin_c<n>_exposuremode&videoin_c<n>_profile_i<TOTALPROFILENUM>_exposuremode",
+												"check": "\"%e\",\"auto,shutterpriority,irispriority,manual\""
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "videoin_c<n>_shuttervalue&videoin_c<n>_profile_i<TOTALPROFILENUM>_shuttervalue",
+												"check": "?\"%d\",\"5~32000\""
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "videoin_c<n>_gainvalue&videoin_c<n>_profile_i<TOTALPROFILENUM>_gainvalue",
+												"check": "?\"%d\",\"0~100\""
+											}
+										]
+									},
+									{
+										"method": "remove",
+										"element": [
+											{
+												"cond": "qid[7].val=2",
+												"param": "videoin_c<n>_maxexposure&videoin_c<n>_profile_i<TOTALPROFILENUM>_maxexposure&videoin_c<n>_minexposure&videoin_c<n>_profile_i<TOTALPROFILENUM>_minexposure&videoin_c<n>_maxgain&videoin_c<n>_profile_i<TOTALPROFILENUM>_maxgain&videoin_c<n>_mingain&videoin_c<n>_profile_i<TOTALPROFILENUM>_mingain"
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_imagefeature.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"cond": "qid[7].val=1",
+												"param": "capability_image_c<n>_exposure_modetype",
+												"value": "auto,manual"
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "capability_image_c<n>_exposure_modetype",
+												"value": "?auto,shutterpriority,irispriority,manual"
+											},
+											{
+												"cond": "qid[7].val=1",
+												"param": "capability_image_c<n>_exposure_rangetype",
+												"value": "twovalues"
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "capability_image_c<n>_exposure_rangetype",
+												"value": "onevalue"
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "capability_image_c<n>_exposure_shuttervaluetype",
+												"value": "?-,fixed,-,fixed"
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "capability_image_c<n>_exposure_gainvaluetype",
+												"value": "?maximum,maximum,maximum,fixed"
+											},
+											{
+												"cond": "qid[7].val=1",
+												"param": "capability_image_c<n>_exposure_automode_affect&capability_image_c<n>_exposure_manualmode_affect",
+												"value": "-"
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "capability_image_c<n>_exposure_automode_affect",
+												"value": "?defaultgain:fixed:37"
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "capability_image_c<n>_exposure_manualmode_affect",
+												"value": "?exposurewin.mode:hidden:,defog:disabled:,wdrpro:disabled:,exposurelevel:hidden:,icrmode.auto:notsupport:,defaultgain:fixed:0"
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "capability_image_c<n>_exposure_shutterprioritymode_affect",
+												"value": "?exposurewin.mode.blc:hidden:,defog:disabled:,wdrpro:disabled:,defaultgain:fixed:37"
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "capability_image_c<n>_exposure_irisprioritymode_affect",
+												"value": "?exposurewin.mode.blc:hidden:,defog:disabled:,wdrpro:disabled:,defaultgain:fixed:37"
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_videoin_c0.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "videoin_c<n>_exposuremode&videoin_c<n>_profile_i<TOTALPROFILENUM>_exposuremode",
+												"value": "auto"
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "videoin_c<n>_shuttervalue&videoin_c<n>_profile_i<TOTALPROFILENUM>_shuttervalue",
+												"value": "?60"
+											},
+											{
+												"cond": "qid[7].val=2",
+												"param": "videoin_c<n>_gainvalue&videoin_c<n>_profile_i<TOTALPROFILENUM>_gainvalue",
+												"value": "?37"
+											}
+										]
+									},
+									{
+										"method": "remove",
+										"element": [
+											{
+												"cond": "qid[7].val=2",
+												"param": "videoin_c<n>_maxexposure&videoin_c<n>_profile_i<TOTALPROFILENUM>_maxexposure&videoin_c<n>_minexposure&videoin_c<n>_profile_i<TOTALPROFILENUM>_minexposure&videoin_c<n>_maxgain&videoin_c<n>_profile_i<TOTALPROFILENUM>_maxgain&videoin_c<n>_mingain&videoin_c<n>_profile_i<TOTALPROFILENUM>_mingain"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"type": "Piris spec in smart sensor",
+				"task": [
+					{
+						"cond": "capability_image_c<n>_iristype=piris && qid[7].val=2",
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "modify",
+										"element": [
+											{
+												"param": "videoin_c<n>_piris_mode&videoin_c<n>_profile_i<TOTALPROFILENUM>_piris_mode",
+												"check": "\"%e\",\"-\""
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_videoin_c0.xml",
+								"content": [
+									{
+										"method": "modify",
+										"element": [
+											{
+												"param": "videoin_c<n>_piris_mode&videoin_c<n>_profile_i<TOTALPROFILENUM>_piris_mode",
+												"value": "-"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"type": "2D privacy mask or 3D privacy mask",
+				"ques": [
+					{
+						"cond": true,
+						"ask": "support 2D(polygon) privacy mask or 3D(rectangle) privacy mask? (1)support 2D(polygon) (2)support 3D(rectangle)",
+						"id": 9
+					}
+				],
+				"task": [
+					{
+						"cond": true,
+						"action": [
+							{
+								"file": "config_imagefeature.xml",
+								"content": [
+									{
+										"method": "modify",
+										"element": [
+											{
+												"cond": "qid[9].val=1",
+												"param": "capability_image_c<n>_privacymask_wintype",
+												"value": "polygon"
+											},
+											{
+												"cond": "qid[9].val=2",
+												"param": "capability_image_c<n>_privacymask_wintype",
+												"value": "3Drectangle"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"type": "Zoom ratio display",
+				"task": [
+					{
+						"cond": "capability_eptz!=0 && CAMERA_TYPE!=PTZ",
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "remove",
+										"element": [
+											{
+												"param": "eptz_c<n>_osdzoom"
+											}
+										]
+									},
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "videoin_c<n>_zoomratiodisplay",
+												"seclevel": "1/4",
+												"check": "\"%d\",\"0~1\""
+											},
+											{
+												"param": "eptz_c<n>_osdzoom",
+												"aliasxpath": "videoin_c<n>_zoomratiodisplay"
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_eptz_c0.xml",
+								"content": [
+									{
+										"method": "remove",
+										"element": [
+											{
+												"param": "eptz_c<n>_osdzoom"
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_videoin_c0.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "videoin_c<n>_zoomratiodisplay",
+												"value": "1"
+											}
+										]
+									}
+								]
+							}
+						]
+					},
+					{
+						"cond": "CAMERA_TYPE=PTZ",
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "videoin_c<n>_zoomratiodisplay",
+												"check": "\"%d\",\"0~1\""
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_videoin_c0.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "videoin_c<n>_zoomratiodisplay",
+												"value": "1"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"type": "Color numbers of privacy mask",
+				"task": [
+					{
+						"cond": true,
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_image_c<n>_privacymask_ncolor",
+												"check": null
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_imagefeature.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"cond": "qid[8].val=1",
+												"param": "capability_image_c<n>_privacymask_ncolor",
+												"value": 15
+											},
+											{
+												"cond": "qid[8].val=2",
+												"param": "capability_image_c<n>_privacymask_ncolor",
+												"value": 1
+
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"type": "Auto tracking spec",
+				"task": [
+					{
+						"cond": true,
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_image_c<n>_autotrack_support",
+												"check": null
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_imagefeature.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"cond": "CAMERA_MODEL=SD",
+												"param": "capability_image_c<n>_autotrack_support",
+												"value": "1"
+											},
+											{
+												"cond": "CAMERA_MODEL!=SD",
+												"param": "capability_image_c<n>_autotrack_support",
+												"value": "0"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			}
+		]
+	}
+}

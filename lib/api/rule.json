@@ -1,0 +1,76 @@
+{
+	"name": {
+		"CAMERA_MODEL":"Bullet",
+		"CAMERA_TYPE":"Standard",
+		"ISSUPPORT_H265":false,
+		"ISSUPPORT_SS1":false,
+		"TOTALSTREAMNUM":"capability_nmediastream",
+		"TOTALPROFILENUM":"capability_nvideoinprofile"
+	},
+	"content": [
+		{
+			"param":"CAMERA_MODEL",
+			"rule":[
+				{
+					"cond":"'VC' in 'system_info_extendedmodelname'",
+					"value":"VC"
+				},
+				{
+					"cond":"capability_fisheye=1",
+					"value":"FE"
+				},
+				{
+					"cond":"'SD' in 'system_info_extendedmodelname'",
+					"value":"SD"
+				},
+				{
+					"cond":"'IZ' in 'system_info_extendedmodelname'",
+					"value":"IZ"
+				},
+				{
+					"cond":"'IP' in 'system_info_extendedmodelname'",
+					"value":"Box"
+				},
+				{
+					"cond":"'IB' in 'system_info_extendedmodelname'",
+					"value":"Bullet"
+				},
+				{
+					"cond":"'FD' in 'system_info_extendedmodelname'",
+					"value":"FD"
+				}
+			]
+		},
+		{
+			"param":"CAMERA_TYPE",
+			"rule":[
+				{
+					"cond":"CAMERA_MODEL=FE || CAMERA_MODEL=Box || CAMERA_MODEL=Bullet || CAMERA_MODEL=FD",
+					"value":"Standard"
+				},
+				{
+					"cond":"CAMERA_MODEL=SD || CAMERA_MODEL=IZ",
+					"value":"PTZ"
+				}
+			]
+		},
+		{
+			"param":"ISSUPPORT_H265",
+			"rule":[
+				{
+					"cond":"'h265' in 'capability_videoin_codec'",
+					"value":true
+				}
+			]
+		},
+		{
+			"param":"ISSUPPORT_SS1",
+			"rule":[
+				{
+					"cond":"'smart' in 'videoin_c0_s0_h264_ratecontrolmode'",
+					"value":true
+				}
+			]
+		}
+	]
+}
