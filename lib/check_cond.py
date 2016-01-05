@@ -6,7 +6,7 @@ import json
 from configer import *
 from evaluator import *
 
-debug = True 
+debug = False 
 
 def check_cond(cond, matrix):
 
@@ -116,8 +116,6 @@ def check_detail_cond(cond, matrix):
 				
 	if debug:
 		print '\n----------- check condition -------------'
-		#print cdf_path
-		#print prefix_etc_path
 		print 'model:%s' % model 
 		print 'param:%s' % param 
 		print 'value:%s' % value 
