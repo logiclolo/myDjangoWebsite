@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2006 sp2 U (http://www.altova.com) by 1 (1) -->
+<root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="D:\yhattm\Working\XML\CDF.xsd" version="">
+	<system>
+	    <cfgfile>config_system.xml</cfgfile>
+		<process></process>
+		<seclevel>7/6</seclevel>   
+		<hostname>
+		    <seclevel>3/1</seclevel>
+			<get/>
+			<set/>
+			<check>"%s" "0~40"</check>
+			<value/>
+		</hostname>
+		<date>
+		    <seclevel>3/1</seclevel>
+			<get>date +%Y/%m/%d</get>
+			<set>update_datetime date %s</set>
+			<check>"%s" "4~20"</check>
+			<value/>  
+		</date>
+		<time>
+		    <seclevel>3/1</seclevel>
+			<get>date +%M:%H:%S</get>
+			<set>update_datetime time %s</set>
+			<check>"%s" "4~20"</check>
+			<value/>  
+		</time>
+		<ntp>
+		    <seclevel>3/1</seclevel>
+			<get/>
+			<set/>
+			<check>"%s" "0~40"</check>
+			<value/>  
+		</ntp>
+		<timezone>
+		    <seclevel>3/1</seclevel>
+			<get/>
+			<set/>
+			<check>"%d" "-12~12"</check>
+			<value/>  
+		</timezone>
+		<updateinterval>
+		    <seclevel>3/1</seclevel>
+			<get/>
+			<set/>
+			<check>"%e" "0,3600,86400,604800,2592000"</check>
+			<value/>  
+		</updateinterval>
+	</system>
+	<videoin> 
+		<cfgfile>config_videoin.xml</cfgfile>
+		<seclevel>7/6</seclevel> 
+		<c0> 
+			<s0> 
+				<resolution>
+					<get/>
+					<set/>
+					<value/>
+				</resolution>
+			</s0>
+		</c0>		
+	</videoin>
+	<security>
+	    <cfgfile></cfgfile>
+	    <seclevel>7/6</seclevel>
+	    <user0>
+	       <name>
+    	        <get>/home/hoz/actmgr -q passwd -n root</get>
+	            <set>/home/hoz/actmgr -n root -e passwd -x %s</set>
+    			<check>"%s","~255"</check>
+    			<value/> 
+	       </name>
+	       <pass>
+	            <get>/home/hoz/actmgr -b -q passwd -n root</get>
+	            <set>/home/hoz/actmgr -n root -e passwd -x "%s</set>
+	            <value/> 
+	       </pass>     
+	    </user0>
+	</security>
+	<network>
+		<cfgfile>config_network.xml</cfgfile>
+		<process>/usr/bin/gen_etc_network_interfaces</process>
+		<seclevel>7/6</seclevel>
+		<type>
+			<seclevel>3/1</seclevel>
+			<check>"%d","0~1"</check>
+			<value/>
+		</type>
+		<pppoeuser>
+			<seclevel>7/7</seclevel>
+			<check>"%s","1~80"</check>
+			<value/>
+		</pppoeuser>
+		<pppoepass>
+			<seclevel>7/7</seclevel>
+			<check>"%s","1~40"</check>
+			<set/>
+			<value/>
+		</pppoepass>
+		<resetip>
+			<seclevel>9/2</seclevel>
+			<get/>
+			<set/>
+			<check>"%d" "0~1"</check>
+			<value/>
+		</resetip>
+		<ipaddress>
+			<seclevel>6/1</seclevel>
+			<get/>
+			<set/>
+			<check>"%d.%d.%d.%d","0~255","0~255","0~255","0~255"</check>
+			<keyword>ip_address</keyword>
+			<value/>
+		</ipaddress>
+		<subnet>
+			<get/>
+			<set/>
+			<check>"%d.%d.%d.%d","0~255","0~255","0~255","0~255"</check>
+			<value>255.255.255.0</value>
+		</subnet>
+		<router>
+			<get/>
+			<set/>
+			<check>"%d.%d.%d.%d","0~255","0~255","0~255","0~255"</check>
+			<value/>
+		</router>
+		<dns1>
+			<get/>
+			<set/>
+			<check>"%d.%d.%d.%d","0~255","0~255","0~255","0~255"</check>
+			<value/>
+		</dns1>
+		<dns2>
+			<get/>
+			<set/>
+			<check>"%d.%d.%d.%d","0~255","0~255","0~255","0~255"</check>
+			<value/>
+		</dns2>
+		<httpport>
+		    <cfgfile>/etc/boa.conf</cfgfile>
+			<get/>
+			<set/>
+			<check>"%d","0~65535"</check>
+			<keyword>Port</keyword>
+			<value/>
+		</httpport>
+	</network>
+</root>
+
