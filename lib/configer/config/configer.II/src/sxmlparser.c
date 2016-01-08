@@ -1,0 +1,1213 @@
+/*
+ *******************************************************************************
+ * $Header:$
+ *
+ *  Copyright (c) 2000-2010 Vivotek Inc. All rights reserved.
+ *
+ *  +-----------------------------------------------------------------+
+ *  | THIS SOFTWARE IS FURNISHED UNDER A LICENSE AND MAY ONLY BE USED |
+ *  | AND COPIED IN ACCORDANCE WITH THE TERMS AND CONDITIONS OF SUCH  |
+ *  | A LICENSE AND WITH THE INCLUSION OF THE THIS COPY RIGHT NOTICE. |
+ *  | THIS SOFTWARE OR ANY OTHER COPIES OF THIS SOFTWARE MAY NOT BE   |
+ *  | PROVIDED OR OTHERWISE MADE AVAILABLE TO ANY OTHER PERSON. THE   |
+ *  | OWNERSHIP AND TITLE OF THIS SOFTWARE IS NOT TRANSFERRED.        |
+ *  |                                                                 |
+ *  | THE INFORMATION IN THIS SOFTWARE IS SUBJECT TO CHANGE WITHOUT   |
+ *  | ANY PRIOR NOTICE AND SHOULD NOT BE CONSTRUED AS A COMMITMENT BY |
+ *  | VIVOTEK INC.                                                    |
+ *  +-----------------------------------------------------------------+
+ *
+ * $History:$
+ * 
+ *******************************************************************************
+ */
+/*!
+ *******************************************************************************
+ * Copyright 2000-2010 Vivotek, Inc. All rights reserved.
+ *
+ * \file
+ * sxmlparser.c
+ *
+ * \brief
+ * A simple, small and standalone XML parser
+ *
+ * \date
+ * 2009/08/06
+ *
+ * \author
+ * Joe Wu
+ *
+ *******************************************************************************
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <assert.h>
+#include <stdarg.h>
+#include <sys/shm.h>
+#include "sxmlparser_local.h"
+#include "common.h"
+#include "configer.h"
+
+//lint -e{715, 818, 952}
+static void DummyOpenTag(HANDLE hInstance, const char *pszTagName, const int iLen)
+{
+}
+//lint -e{715, 818, 952}
+static void DummyCloseTag(HANDLE hInstance, const char *pszTagName, const int iLen)
+{
+}
+//lint -e{715, 818, 952}
+static void DummyAttributeValue(HANDLE hInstance, 
+								const char *pszTagName, const int iTagNameLen,
+								const char *pszAttrName, const int iAttrNameLen,
+								const char *pszAttrValue, const int iAttrValueLen)
+{
+}
+//lint -e{715, 818, 952}
+static void DummyTagValue(HANDLE hInstance, const char *pszTagName, const int iTagNameLen,
+							 const char *pszTagValue, const int iTagValueLen)
+{
+}
+
+static char *g_szNULLValue = "";
+//static volatile const char SXMLPARSER_rcsid[] = "$Id: " SXMLPARSER_VERSION ", SXMLPARSER, 2009/08/11 $";
+
+// ----------------------------------------------------------------------------
+static SCODE SXMLParser_Parse2(const BYTE *pbyXMLStream, 
+							   const PFSXMLParser_InternalCb pfnCb, 
+							   const HANDLE hInstance)	
+{
+	ESXMLParseState			sxmlState = STATE_START;
+	const unsigned char     *__restrict pszCurChar;
+	const unsigned char		*pszValue	  = NULL;
+	int						iValueLen     = 0;
+	const unsigned char		*pszTagName   = NULL;
+	int						iTagNameLen   = 0;
+	char					chQuote = 0;
+	BOOL                    bCloseTag  = 0;
+	SCODE					scResult;
+
+	for (pszCurChar = pbyXMLStream; *pszCurChar; ) 
+	{
+		switch(sxmlState) 
+		{
+		case sxsWhiteSpace:	// outside tags
+			pszValue = pszCurChar;
+
+			for(; *pszCurChar != '<' && *pszCurChar != 0; pszCurChar++);
+			iValueLen = (int)(pszCurChar - pszValue);
+
+			// skip white space, unicode header
+			//while((strchr(" \t\r\n", *pszCurChar) || *pszCurChar > 0xB0) && pszCurChar != 0)	pszCurChar++;
+
+			if(*pszCurChar == '<') 
+			{
+				// check whether it is comments
+				if(memcmp(pszCurChar, "<!--", 4) == 0)
+				{
+					pszCurChar += 4;
+					sxmlState = sxsComment;
+				}
+				// or header
+				else if(memcmp(pszCurChar, "<?", 2) == 0)
+				{
+					pszCurChar += 2;
+					sxmlState = sxsHeader;
+				}
+				else	// or an open of a tag
+				{
+					if(*(pszCurChar + 1) == '/')	// end of tagvalue
+					{
+						if(!bCloseTag)
+						{
+							V_CALL_EX(pfnCb(hInstance, sxcbTagValue, pszValue, iValueLen), scResult, return scResult;);
+							//if((scResult = pfnCb(hInstance, sxcbTagValue, pszValue, iValueLen)) != S_OK)
+							//{
+								//return scResult;
+							//}
+						}
+					}
+					// start of another tag
+					sxmlState = sxsOpenTag;
+					pszCurChar++;
+				}
+				continue;
+			}
+			// end of document
+			break;
+		case sxsComment:
+			pszValue = pszCurChar;
+			while(*pszCurChar)
+			{
+				if(memcmp(pszCurChar, "-->", 3) == 0)
+				{
+					sxmlState = sxsWhiteSpace;
+					iValueLen = (int)(pszCurChar - pszValue);
+					V_CALL_EX(pfnCb(hInstance, sxcbComment, pszValue, iValueLen), scResult, return scResult;);
+					//if((scResult = pfnCb(hInstance, sxcbComment, pszValue, iValueLen)) != S_OK)
+					//{
+						//return scResult;
+					//}
+					pszCurChar += 3;
+					break;
+				}
+				pszCurChar++;
+			}
+			if(*pszCurChar == 0)
+			{
+				// miss end of comments
+				return errSXMLMissingCloseComment;
+			}
+			continue;
+			//break;
+		case sxsHeader:
+			pszValue = pszCurChar;
+			while(*pszCurChar)
+			{
+				if(memcmp(pszCurChar, "?>", 2) == 0)
+				{
+					sxmlState = sxsWhiteSpace;
+					iValueLen = (int)(pszCurChar - pszValue);
+					V_CALL_EX(pfnCb(hInstance, sxcbHeader, pszValue, iValueLen), scResult, return scResult;);
+					//if((scResult = pfnCb(hInstance, sxcbHeader, pszValue, iValueLen)) != S_OK)
+					//{
+						//return scResult;
+					//}
+					pszCurChar += 2;
+					break;
+				}
+				pszCurChar++;
+			}
+			if(*pszCurChar == 0)
+			{
+				// miss end of header
+				return errSXMLMissingCloseHeader;
+			}
+			continue;
+			//break;
+		case sxsOpenTag:
+			if(isalpha(*pszCurChar) || *pszCurChar == '_') 
+			{
+				bCloseTag = 0;
+			}
+			else if (*pszCurChar == '/') 
+			{
+				pszCurChar++;
+				bCloseTag = 1;
+			}
+			else
+			{
+				return errSXMLNULLTagName;
+			}
+			sxmlState = sxsTagName;
+			continue;
+		//case sxsCloseTag:
+		//	break;
+		case sxsAttrName:
+			pszValue = pszCurChar;
+			for(; (isalnum(*pszCurChar) || *pszCurChar == ':' || *pszCurChar == '_' || *pszCurChar == '-' || *pszCurChar == '.'); pszCurChar++);
+			iValueLen = (int)(pszCurChar - pszValue);
+			
+			V_CALL_EX(pfnCb(hInstance, sxcbAttrName, pszValue, iValueLen), scResult, return scResult;);
+			//if((scResult = pfnCb(hInstance, sxcbAttrName, pszValue, iValueLen)) != S_OK)
+			//{
+				//return scResult;
+			//}
+
+			//skip white space
+			for(;*pszCurChar == ' ' || *pszCurChar == '\t'; pszCurChar++);
+
+			if(*pszCurChar == '=')
+			{
+				sxmlState = sxsAttrValue;
+				pszCurChar++;
+				//skip white space
+				for(;*pszCurChar == ' ' || *pszCurChar == '\t'; pszCurChar++);
+				continue;
+			}
+			return errSXMLNULLAttrValue;
+			//break;
+		case sxsAttrValue:
+			chQuote = *pszCurChar;
+			if(chQuote == '"' || chQuote == '\'')	//  quoted value
+			{
+				pszCurChar++;
+				pszValue = pszCurChar;
+				for(; *pszCurChar != chQuote && *pszCurChar != 0; pszCurChar++);
+				iValueLen = (int)(pszCurChar - pszValue);
+				if(*pszCurChar != chQuote)
+				{
+					return errSXMLMissingQuote;
+				}
+				V_CALL_EX(pfnCb(hInstance, sxcbAttrValue, pszValue, iValueLen), scResult, return scResult;);
+				//if((scResult = pfnCb(hInstance, sxcbAttrValue, pszValue, iValueLen)) != S_OK)
+				//{
+					//return scResult;
+				//}
+
+				//skip quote
+				pszCurChar++;
+				// skip white space
+				for(;*pszCurChar == ' ' || *pszCurChar == '\t'; pszCurChar++);
+				if(isalpha(*pszCurChar))	// it is attribute name again
+				{
+					sxmlState = sxsAttrName;
+				}
+				else if(*pszCurChar == '>')	// end of tag
+				{
+					pszCurChar++;
+					sxmlState = sxsWhiteSpace;
+				}
+				else if(*pszCurChar == '/' && *(pszCurChar + 1) == '>')	// end of tag and close tag
+				{
+					bCloseTag = 1;
+					pszCurChar += 2;
+					sxmlState = sxsWhiteSpace;
+					V_CALL_EX(pfnCb(hInstance, sxcbTagValue, NULL, 0), scResult, return scResult;);
+					//if((scResult = pfnCb(hInstance, sxcbTagValue, NULL, 0)) != S_OK)
+					//{
+						//return scResult;
+					//}
+					V_CALL_EX(pfnCb(hInstance, sxcbCloseTag, pszTagName, iTagNameLen), scResult, return scResult;);
+					//if((scResult = pfnCb(hInstance, sxcbCloseTag, pszTagName, iTagNameLen)) != S_OK)
+					//{
+						//return scResult;
+					//}
+				}
+				else
+				{
+					return errSXMLMissingEndOfTag;
+				}
+				continue;
+			}
+			return errSXMLMissingQuote;
+			//break;
+		case sxsTagName:
+			pszTagName = pszValue = pszCurChar;
+			for(; (isalnum(*pszCurChar) || *pszCurChar == ':' || *pszCurChar == '_' || *pszCurChar == '-' || *pszCurChar == '.'); pszCurChar++);
+			iTagNameLen = iValueLen = (int)(pszCurChar - pszValue);
+			V_CALL_EX(pfnCb(hInstance, bCloseTag ? sxcbCloseTag : sxcbOpenTag, pszValue, iValueLen), scResult, return scResult;);
+			//if((scResult = pfnCb(hInstance, bCloseTag ? sxcbCloseTag : sxcbOpenTag, pszValue, iValueLen)) != S_OK)
+			//{
+				//return scResult;
+			//}
+			
+			//skip white space
+			for(;*pszCurChar == ' ' || *pszCurChar == '\t'; pszCurChar++);
+			if(bCloseTag)	// if it is close tag, the following should be '>'
+			{
+				if(*pszCurChar == '>')
+				{
+					sxmlState = sxsWhiteSpace;
+					pszCurChar++;
+					continue;
+				}
+			}
+			if(!bCloseTag)	// open tag
+			{
+				if(isalpha(*pszCurChar))	// attribute name followed
+				{
+					sxmlState = sxsAttrName;
+					continue;
+				}
+				else if(*pszCurChar == '>')	// end of tag
+				{
+					pszCurChar++;
+					sxmlState = sxsWhiteSpace;
+					continue;
+				}
+				else if(*pszCurChar == '/' && *(pszCurChar + 1) == '>')	// end of tag and close tag
+				{
+					bCloseTag = 1;
+					pszCurChar += 2;
+					sxmlState = sxsWhiteSpace;
+					V_CALL_EX(pfnCb(hInstance, sxcbTagValue, NULL, 0), scResult, return scResult;);
+					//if((scResult = pfnCb(hInstance, sxcbTagValue, NULL, 0)) != S_OK)
+					//{
+						//return scResult;
+					//}
+					V_CALL_EX(pfnCb(hInstance, sxcbCloseTag, pszTagName, iTagNameLen), scResult, return scResult;);
+					//if((scResult = pfnCb(hInstance, sxcbCloseTag, pszTagName, iTagNameLen)) != S_OK)
+					//{
+						//return scResult;
+					//}
+					continue;
+				}
+			}
+			return errSXMLMissingEndOfTag;
+		}
+	}
+
+	return S_OK;
+}
+// -----------------------------------------------------------------------------
+static void SXMLParser_ResetState(HANDLE hObject)
+{
+	PTHIS->iXMLDepth = 0;
+	PTHIS->iXMLStrSize = 0;
+	PTHIS->iXMLElementCount = 0;
+	PTHIS->iXMLAttributeCount = 0;
+	PTHIS->iStackPos = 0;
+	PTHIS->iElemIndex = 0;
+	PTHIS->iAttrIndex = 0;
+	PTHIS->pCurElement = NULL;
+	PTHIS->pCurAttribute = NULL;
+	PTHIS->pszCurXMLStr = NULL;
+}
+#if 0
+// -----------------------------------------------------------------------------
+static void SXMLParser_ReleaseInternalMemory(HANDLE hObject)
+{
+	if(PTHIS->pszXMLString)	
+	{
+		free(PTHIS->pszXMLString);
+		PTHIS->pszXMLString = NULL;
+	}
+	if(PTHIS->pXMLAttribute)
+	{
+		free(PTHIS->pXMLAttribute);
+		PTHIS->pXMLAttribute = NULL;
+	}
+	if(PTHIS->pXMLElement)
+	{
+		free(PTHIS->pXMLElement);
+		PTHIS->pXMLElement = NULL;
+	}
+	if(PTHIS->ppXMLElementStack)
+	{
+		free(PTHIS->ppXMLElementStack);
+		PTHIS->ppXMLElementStack = NULL;
+	}
+	if(PTHIS->pvDOMMem)
+	{
+		free(PTHIS->pvDOMMem);
+		PTHIS->pvDOMMem = NULL;
+		PTHIS->iDOMMemSize = 0;
+	}
+}
+#endif
+// -----------------------------------------------------------------------------
+SCODE SXMLParser_Initial(HANDLE *phObject)
+{
+	TSXMLParserInfo *pThis;
+
+	pThis = (TSXMLParserInfo *)calloc(1, sizeof(TSXMLParserInfo));
+	if(NULL == pThis)
+	{
+		return S_FAIL;
+	}
+    pThis->pfnCloseTag = DummyCloseTag ;
+    pThis->pfnOpenTag = DummyOpenTag;
+    pThis->pfnTagValue = DummyTagValue;
+    pThis->pfnAttributeValue = DummyAttributeValue;
+
+	*phObject = (HANDLE)(pThis);
+	return S_OK;
+}
+// -----------------------------------------------------------------------------
+SCODE SXMLParser_Release(HANDLE *phObject, ESXMLProcessMode sxMode)
+{
+	printf("---------- in SXMLParser_Release -------------\n");
+	TSXMLParserInfo *pThis;
+
+	if(NULL == phObject)
+	{
+		return S_FAIL;
+	}
+	pThis = (TSXMLParserInfo *)(*phObject);
+	if(pThis)
+	{
+		if( sxpmDOMshm == sxMode )
+		{
+			shmdt(pThis->pvDOMMem);
+
+			int iShmId;
+			iShmId = shmget( pThis->keyShm, 0, 0666 );
+			if( shmctl( iShmId, IPC_RMID, 0 ) == -1 )
+			{
+				fprintf( stderr, "shmctl(IPC_RMID) failed\n" );
+			}
+		}
+		else
+		{
+			if(pThis->pvDOMMem)
+			{
+				free(pThis->pvDOMMem);
+				pThis->pvDOMMem = NULL;
+				pThis->iDOMMemSize = 0;
+			}
+			//SXMLParser_ReleaseInternalMemory(pThis);
+		}
+
+		free(pThis);
+	}
+	*phObject = NULL;
+	return S_OK;
+}
+// -----------------------------------------------------------------------------
+SCODE SXMLParser_SetOptions(HANDLE hObject, const TSXMLParserOptions * pOptions)
+{
+	TSXMLParserInfo * const pThis = (TSXMLParserInfo *)hObject;
+
+	if((pOptions->dwFlags & (DWORD) sxofSAXMode) == (DWORD)sxofSAXMode)
+	{
+		pThis->sxSAXMode = pOptions->sxSAXMode;
+	}
+	if((pOptions->dwFlags & (DWORD) sxofSimpleCb) == (DWORD) sxofSimpleCb)
+	{
+		pThis->pfnCloseTag		 = pOptions->pfnCloseTag		? pOptions->pfnCloseTag			: DummyCloseTag;
+		pThis->pfnOpenTag		 = pOptions->pfnOpenTag			? pOptions->pfnOpenTag			: DummyOpenTag;
+		pThis->pfnTagValue		 = pOptions->pfnTagValue		? pOptions->pfnTagValue			: DummyTagValue;
+		pThis->pfnAttributeValue = pOptions->pfnAttributeValue	? pOptions->pfnAttributeValue	: DummyAttributeValue;
+		pThis->hSimpleCbInstance = pOptions->hSimpleCbInstance;
+	}
+	if((pOptions->dwFlags & (DWORD) sxofPatternMatchData) == (DWORD) sxofPatternMatchData)
+	{
+		pThis->pSAXPatternMatch = pOptions->pSAXPatternMatch;
+		pThis->hPatternMatchInstance = pOptions->hPatternMatchInstance;
+	}
+	if((pOptions->dwFlags & (DWORD) sxofDOMshmKey) == (DWORD)sxofDOMshmKey)
+	{
+		pThis->keyShm = pOptions->keyShm;
+	}
+	return S_OK;
+}
+// -----------------------------------------------------------------------------
+static SCODE SXMLStack_Push(TSXMLParserInfo *pThis, const TXMLElement *pElement)
+{
+	if(pThis->iStackPos < pThis->iXMLDepth)
+	{
+		pThis->ppXMLElementStack[pThis->iStackPos] = (TXMLElement *)pElement;
+		pThis->iStackPos++;
+		return S_OK;
+	}
+	return S_FAIL;
+}
+// -----------------------------------------------------------------------------
+static const TXMLElement *SXMLStack_Pop(TSXMLParserInfo *pThis)
+{
+	if(pThis->iStackPos > 0)
+	{
+		pThis->iStackPos--;
+		return pThis->ppXMLElementStack[pThis->iStackPos];
+	}
+	return NULL;
+}
+// -----------------------------------------------------------------------------
+static const TXMLElement *SXMLStack_GetTop(TSXMLParserInfo *pThis)
+{
+	if(pThis->iStackPos > 0)
+	{
+		return pThis->ppXMLElementStack[pThis->iStackPos - 1];
+	}
+	return NULL;
+}
+#if 0
+// -----------------------------------------------------------------------------
+static SCODE DumpCb(HANDLE hInstance, const ESXMLCbType sxcbType, const char *pszValue, int iLen)
+{
+	char szBuf[MAX_TAG_VALUE_LEN];
+	int  iBufLen = iLen > (MAX_TAG_VALUE_LEN - 1) ? MAX_TAG_VALUE_LEN - 1 : iLen;
+
+	if(pszValue == NULL || iLen == 0)
+	{
+		strcpy(szBuf, "#NULL#");
+	}
+	else
+	{
+		memcpy(szBuf, pszValue, iBufLen);
+		szBuf[iBufLen] = 0;
+	}
+
+	if(sxcbOpenTag == sxcbType)
+	{
+		DbgPrint("\r\n<%s>", szBuf);
+	}
+	else if(sxcbCloseTag == sxcbType)
+	{
+		DbgPrint("</%s>\r\n", szBuf);
+	}
+	else if(sxcbAttrName == sxcbType)
+	{
+		DbgPrint("[%s=", szBuf);
+	}
+	else if(sxcbAttrValue == sxcbType)
+	{
+		DbgPrint("'%s']", szBuf);
+	}
+	else if(sxcbTagValue == sxcbType)
+	{
+		DbgPrint("%s", szBuf);
+	}
+	else if(sxcbComment == sxcbType)
+	{
+		DbgPrint("<!--%s-->\r\n", szBuf);
+	}
+	else if(sxcbHeader == sxcbType)
+	{
+		DbgPrint("<?%s?>\r\n", szBuf);
+	}
+}
+#endif
+
+// -----------------------------------------------------------------------------
+static SCODE CalcMemCb(HANDLE hInstance, const ESXMLCbType sxcbType, unsigned const char *pszValue, int iLen)
+{
+	TSXMLParserInfo *pThis = (TSXMLParserInfo *)hInstance;
+
+	if(sxcbOpenTag == sxcbType)
+	{
+		pThis->iXMLStrSize += (iLen + 1);
+		pThis->iXMLElementCount++;
+		pThis->iStackPos++;
+		if(pThis->iStackPos > pThis->iXMLDepth)
+		{
+			pThis->iXMLDepth = pThis->iStackPos;
+		}
+	}
+	else if(sxcbCloseTag == sxcbType)
+	{
+		pThis->iStackPos--;
+		if(pThis->iStackPos < 0)	// incorrect XML depth
+		{
+			return errXMLTagUnbalance;
+		}
+		if(memcmp(pszValue, "value", 5)==0)
+		{
+			pThis->iXMLStrSize += VALUESIZE;
+		}
+	}
+	else if(sxcbAttrName == sxcbType)
+	{
+		pThis->iXMLStrSize += (iLen + 1);
+		pThis->iXMLAttributeCount++;
+	}
+	else if(sxcbAttrValue == sxcbType)
+	{
+		pThis->iXMLStrSize += (iLen + 1);
+	}
+	else if(sxcbTagValue == sxcbType)
+	{
+		pThis->iXMLStrSize += (iLen + 1);
+	}
+	return S_OK;
+}
+// -----------------------------------------------------------------------------
+static SCODE ConstructDOMCb(HANDLE hInstance, const ESXMLCbType sxcbType, const unsigned char *pszValue, int iLen)
+{
+	TSXMLParserInfo *pThis = (TSXMLParserInfo *)hInstance;
+	SCODE	scResult;
+
+	// add to string table if it is one of tagname, tagvalue, attrname, attrvalue
+	if((sxcbType & (sxcbOpenTag | sxcbAttrName | sxcbAttrValue | sxcbTagValue)) != 0)
+	{
+		memcpy(pThis->pszCurXMLStr, pszValue, iLen);
+	}
+	if(sxcbOpenTag == sxcbType)
+	{
+		TXMLElement *pCurElement, *pParent;
+
+		pThis->pCurElement++;
+		pThis->iElemIndex++;
+
+		// make sure that the element count is under limit
+		assert(pThis->pCurElement < (pThis->pXMLElement + pThis->iXMLElementCount + 1));
+		pCurElement = pThis->pCurElement;
+		pParent = (TXMLElement *)SXMLStack_GetTop(pThis);
+		
+		pCurElement->pszTagName = (char *)pThis->pszCurXMLStr;
+		pCurElement->pParent = pParent;
+		pCurElement->iIndex = pThis->iElemIndex;
+		pCurElement->pszTagValue = g_szNULLValue;
+
+		if(pParent)
+		{
+			if(NULL == pParent->pChild)	// start add child
+			{
+				pParent->pChild = pCurElement;
+			}
+			else
+			{
+				TXMLElement *pChild = pParent->pChild;
+				while(pChild->pSibling)
+				{
+					pChild = pChild->pSibling;
+				}
+				pChild->pSibling = pCurElement;
+			}
+			pParent->iChildCount++;
+		}
+		// push to stack
+		V_CALL_CHKNEQ_EX(SXMLStack_Push(pThis, pCurElement), scResult, S_FAIL, return errSXMLPushError;);
+	}
+	else if(sxcbCloseTag == sxcbType)
+	{
+		TXMLElement *pCurElement;
+		int i;
+
+		V_CALL_CHKNEQ_EX((TXMLElement *)SXMLStack_Pop(pThis), pCurElement, NULL, return errXMLTagUnbalance;);
+		//if((pCurElement = (TXMLElement *)SXMLStack_Pop(pThis)) == NULL)
+		//{
+			//return errXMLTagUnbalance;
+		//}
+		// unmatched tag
+		V_CALL_CHKEQ_EX(memcmp(pCurElement->pszTagName, pszValue, iLen), i, 0, return errSXMLMissingCloseTag;);
+		//if(memcmp(pCurElement->pszTagName, pszValue, iLen) != 0)
+		//{
+			//return errSXMLMissingCloseTag;
+		//}
+		if(memcmp(pszValue, "value", 5)==0)
+		{
+			pThis->pszCurXMLStr += VALUESIZE;
+		}
+	}
+	else if(sxcbAttrName == sxcbType)
+	{
+		TXMLAttribute *pCurAttribute;
+
+		pThis->pCurAttribute++;
+		pThis->iAttrIndex++;
+
+		// make sure that the attribute count is under limit
+		assert(pThis->pCurAttribute < pThis->pXMLAttribute + pThis->iXMLAttributeCount + 1);
+		pCurAttribute = pThis->pCurAttribute;
+		pCurAttribute->pszName = (char *)pThis->pszCurXMLStr;
+		
+		// add new attribute element
+		if(pThis->pCurElement->pAttribute == 0)	// start add attribute
+		{
+			pThis->pCurElement->pAttribute = pCurAttribute;
+		}
+		pCurAttribute->iIndex = pThis->iAttrIndex;
+		pThis->pCurElement->iAttrCount++;
+	}
+	else if(sxcbAttrValue == sxcbType)
+	{
+		assert(pThis->pCurAttribute);
+		pThis->pCurAttribute->pszValue = (char *)pThis->pszCurXMLStr;
+	}
+	else if(sxcbTagValue == sxcbType)
+	{
+		assert(pThis->pCurElement);
+		pThis->pCurElement->pszTagValue = (char *)pThis->pszCurXMLStr;
+	}
+
+	if((sxcbType & (sxcbOpenTag | sxcbAttrName | sxcbAttrValue | sxcbTagValue)) != 0)
+	{
+		pThis->pszCurXMLStr += iLen;
+		*pThis->pszCurXMLStr++ = 0;
+		// make sure that the string size is under limit
+		assert(pThis->pszCurXMLStr <= pThis->pszXMLString + pThis->iXMLStrSize);
+	}
+
+	return S_OK;
+}
+// -----------------------------------------------------------------------------
+static SCODE SimpleSAXCb(HANDLE hInstance, const ESXMLCbType sxcbType, const unsigned char *pszValue, int iLen)
+{
+	TSAXSimpleCbInfo *pSAX = (TSAXSimpleCbInfo *)hInstance;
+	TSXMLParserInfo *pThis = pSAX->pXMLParserInfo;
+
+	if(sxcbOpenTag == sxcbType)
+	{
+		pSAX->pszTagName = pszValue;
+		pSAX->iTagNameLen = iLen;
+		pThis->pfnOpenTag(pThis->hSimpleCbInstance, (char *)pszValue, iLen);
+	}
+	else if(sxcbCloseTag == sxcbType)
+	{
+		pThis->pfnCloseTag(pThis->hSimpleCbInstance, (char *)pszValue, iLen);
+	}
+	else if(sxcbAttrName == sxcbType)
+	{
+		pSAX->pszAttrName = pszValue;
+		pSAX->iAttrNameLen = iLen;
+	}
+	else if(sxcbAttrValue == sxcbType)
+	{
+		pThis->pfnAttributeValue(pThis->hSimpleCbInstance, 
+		(char *)pSAX->pszTagName, pSAX->iTagNameLen, 
+		(char *)pSAX->pszAttrName, pSAX->iAttrNameLen, 
+		(char *)pszValue, iLen);
+	}
+	else if(sxcbTagValue == sxcbType)
+	{
+		pThis->pfnTagValue(pThis->hSimpleCbInstance, (char *)pSAX->pszTagName, 
+		pSAX->iTagNameLen, (char *)pszValue, iLen);
+	}
+	return S_OK;
+}
+// -----------------------------------------------------------------------------
+static SCODE PatternMatchSAXCb(HANDLE hInstance, const ESXMLCbType sxcbType, const unsigned char *pszValue, int iLen)
+{
+	TSAXPatternMatchInfo *pSAX = (TSAXPatternMatchInfo *)hInstance;
+	TSXMLParserInfo *pThis = pSAX->pXMLParserInfo;
+	TSAXPatternMatch *pPM = pThis->pSAXPatternMatch + pSAX->iPatternIndex;
+
+	if(NULL == pPM)	return S_OK;	// nothing to be matched
+
+	if(sxcbOpenTag == sxcbType)
+	{
+		if(memcmp(pPM->pszPattern + pSAX->iStrIndex, pszValue, iLen) == 0)
+		{
+			// advanced to next pattern
+			pSAX->iStrIndex += iLen;
+
+			// check if end of pattern
+			if(pPM->pszPattern[pSAX->iStrIndex] == 0)
+			{
+				
+			}
+			pSAX->iStrIndex += iLen + 1;	
+		}
+
+	}
+	else if(sxcbCloseTag == sxcbType)
+	{
+	}
+	else if(sxcbAttrName == sxcbType)
+	{
+	}
+	else if(sxcbAttrValue == sxcbType)
+	{
+	}
+	else if(sxcbTagValue == sxcbType)
+	{
+	}
+	return S_OK;
+}
+// -----------------------------------------------------------------------------
+SCODE SXMLParser_Process(HANDLE hObject, const BYTE *pszXMLStream, ESXMLProcessMode sxMode)
+{
+	SCODE scResult = S_OK;
+
+	if( ( sxpmDOM == sxMode ) || ( sxpmDOMshm == sxMode ) )
+	{
+		int iDOMMemSize;
+
+		DbgPrint("Process DOM XML\r\n");
+		
+		// reset the internal state
+		SXMLParser_ResetState(hObject);
+		// calculate memory requirement for XML storage
+		V_CALL_EX(SXMLParser_Parse2(pszXMLStream, CalcMemCb, hObject), scResult,return scResult;);
+		//if((scResult = SXMLParser_Parse2(pszXMLStream, CalcMemCb, hObject)) != S_OK)	return scResult;
+		DbgPrint("Depth = %d, StrSize = %d, ElementCount = %d, AttributeCount = %d\r\n", 
+				  PTHIS->iXMLDepth, PTHIS->iXMLStrSize, PTHIS->iXMLElementCount, PTHIS->iXMLAttributeCount);
+		
+		if(PTHIS->iStackPos != 0)
+		{
+			DbgPrint("Unbalanced stack pos = %d\r\n", PTHIS->iStackPos);
+			return errXMLTagUnbalance;
+		}
+		// calculate total size required
+		iDOMMemSize = sizeof( TDOMshm ) + PTHIS->iXMLStrSize + 3 + 
+					  (PTHIS->iXMLElementCount + 1) * sizeof(TXMLElement) +
+					  (PTHIS->iXMLAttributeCount + 1) * sizeof(TXMLAttribute) +
+					  PTHIS->iXMLDepth * sizeof(TXMLElement *);
+
+		// reallocate memory only if the request memory is larger than previously allocated
+		// this can prevent to reallocate memory frequently and make memory fragment
+		if(PTHIS->iDOMMemSize < iDOMMemSize)	// need to reallocate
+		{
+			if( sxpmDOMshm == sxMode )
+			{
+				int iShmId;
+				iShmId = shmget( PTHIS->keyShm, 0, 0666 );
+				if( shmctl( iShmId, IPC_RMID, 0 ) == -1 )
+				{
+					fprintf( stderr, "shmctl(IPC_RMID) failed\n" );
+				}
+				iShmId = shmget( PTHIS->keyShm, iDOMMemSize, 0666 | IPC_CREAT );
+				if( iShmId == -1 )
+				{
+					return errSXMLOutOfMemory;
+				}
+				PTHIS->pvDOMMem = shmat( iShmId, (void *)0, 0 );
+			}
+			else
+			{
+				if(PTHIS->pvDOMMem)	
+				{
+					free(PTHIS->pvDOMMem);
+				}
+				V_CALL_CHKNEQ_EX(calloc(1, iDOMMemSize), PTHIS->pvDOMMem, NULL, return errSXMLOutOfMemory;);
+				//if((PTHIS->pvDOMMem = calloc(1, iDOMMemSize)) == NULL)
+				//{
+					//return errSXMLOutOfMemory;
+				//}
+			}
+			
+			PTHIS->iDOMMemSize = iDOMMemSize;
+		}
+		else	// reset the internal memory
+		{
+			memset(PTHIS->pvDOMMem, 0, PTHIS->iDOMMemSize);
+		}
+		// assign internal memory pointer
+		iDOMMemSize = sizeof( TDOMshm );		
+		PTHIS->pszXMLString = PTHIS->pvDOMMem + iDOMMemSize;
+		iDOMMemSize += ((PTHIS->iXMLStrSize + 3) >> 2) << 2;
+		
+		PTHIS->pXMLElement = (TXMLElement *)((char *)PTHIS->pvDOMMem + iDOMMemSize);	
+		iDOMMemSize += (PTHIS->iXMLElementCount + 1) * sizeof(TXMLElement);		
+		
+		if( sxpmDOMshm == sxMode )
+		{
+			TDOMshm *pTDOMshm = PTHIS->pvDOMMem;
+			pTDOMshm->pBaseAddr = PTHIS->pvDOMMem;
+			pTDOMshm->pRoot = PTHIS->pXMLElement + 1;
+			printf( "DOM shared memory base address=%p, root element address = %p\n", pTDOMshm->pBaseAddr, pTDOMshm->pRoot );
+		}
+		
+		PTHIS->pXMLAttribute = (TXMLAttribute *)((char *)PTHIS->pvDOMMem + iDOMMemSize);	
+		iDOMMemSize += (PTHIS->iXMLAttributeCount + 1) * sizeof(TXMLAttribute);
+
+		PTHIS->ppXMLElementStack = (TXMLElement **)((char *)PTHIS->pvDOMMem + iDOMMemSize);
+
+#if 0
+		// allocate memory
+		if((PTHIS->pszXMLString = (unsigned char *)calloc(1, PTHIS->iXMLStrSize)) == NULL ||	
+			// reserve more than one element as header
+		   (PTHIS->pXMLElement = (TXMLElement *)calloc(PTHIS->iXMLElementCount + 1, sizeof(TXMLElement))) == NULL ||
+		   (PTHIS->pXMLAttribute = (TXMLAttribute *)calloc(PTHIS->iXMLAttributeCount + 1, sizeof(TXMLAttribute))) == NULL ||
+		   (PTHIS->ppXMLElementStack = (TXMLElement **)calloc(PTHIS->iXMLDepth, sizeof(TXMLElement *))) == NULL)
+		   //(PTHIs->ppXMLAttrList = (TXMLAttribute **)calloc(PTHIS->iXMLAttributeCount, sizeof(TXMLAttribute *))) == NULL)
+		{
+			SXMLParser_ReleaseInternalMemory(hObject);
+			return errSXMLOutOfMemory;
+		}
+#endif
+	
+		// Construct internal XML DOM structure
+		PTHIS->pszCurXMLStr  = PTHIS->pszXMLString;
+		PTHIS->pCurElement   = PTHIS->pXMLElement;
+		PTHIS->pCurAttribute = PTHIS->pXMLAttribute;
+
+		V_CALL_EX(SXMLParser_Parse2(pszXMLStream, ConstructDOMCb, hObject), scResult, return scResult;);
+		//if((scResult = SXMLParser_Parse2(pszXMLStream, ConstructDOMCb, hObject)) != S_OK)	
+		//{
+			//return scResult;
+		//}
+	}
+	else if(sxpmSAX == sxMode)
+	{
+
+		DbgPrint("Process SAX XML\r\n");
+
+		if(PTHIS->sxSAXMode == sxsmSimple)
+		{
+			TSAXSimpleCbInfo saxInfo;
+			memset(&saxInfo, 0, sizeof(saxInfo));
+			saxInfo.pXMLParserInfo = PTHIS;
+
+			V_CALL_EX(SXMLParser_Parse2(pszXMLStream, SimpleSAXCb, (HANDLE)&saxInfo), scResult, return scResult;);
+			//if((scResult = SXMLParser_Parse2(pszXMLStream, SimpleSAXCb, (HANDLE)&saxInfo)) != S_OK)
+			//{
+				//return scResult;
+			//}
+		}
+		else if(PTHIS->sxSAXMode == sxsmPatternMatch)
+		{
+#if 0
+			TSAXPatternMatchInfo saxInfo;
+			memset(&saxInfo, 0, sizeof(saxInfo));
+			saxInfo.pXMLParserInfo = PTHIS;
+			if((scResult = SXMLParser_Parse2(pszXMLStream, PatternMatchSAXCb, (HANDLE)&saxInfo)) != S_OK)
+			{
+				return scResult;
+			}
+#else
+			DbgPrint("Not support yet!\r\n");
+			return S_FAIL;
+#endif
+		}
+		else
+		{
+			DbgPrint("Invalid SAX mode = %d\r\n", PTHIS->sxSAXMode);
+			return S_FAIL;
+		}
+	}
+
+	return S_OK;
+}
+// -----------------------------------------------------------------------------
+SCODE SXMLParser_ProcessFile(HANDLE hObject, const char *pszFileName, ESXMLProcessMode sxMode)
+{
+	FILE *pfIn = NULL;
+	BYTE *pszStream = NULL;
+	long lFileSize = 0;
+	SCODE scResult = S_OK;
+
+V_BEGIN
+	V_CALL_CHKNEQ_EX(fopen(pszFileName, "rb"), pfIn, NULL, scResult = S_FAIL; V_EXIT;);
+	//if((pfIn = fopen(pszFileName, "rb")) == NULL)
+	//{
+		//DbgPrint("Failed to open input file %s\r\n", pszFileName);
+		//scResult = S_FAIL;
+		//goto lbExit;
+	//}
+	fseek(pfIn, 0, SEEK_END);
+	V_CALL_CHKNEQ(ftell(pfIn), lFileSize, -1);
+	fseek(pfIn, 0, SEEK_SET);
+
+	V_CALL_CHKNEQ_EX((BYTE *)malloc((size_t)lFileSize + 1), pszStream, NULL, scResult = S_FAIL; V_EXIT;);
+	//if((pszStream = (BYTE *)malloc(dwFileSize)) == NULL)
+	//{
+	//	DbgPrint("Failed to allocate memory!\r\n");
+	//	scResult = S_FAIL;
+	//	goto lbExit;
+	//}
+	fread(pszStream, 1, lFileSize, pfIn);
+	fclose(pfIn);	pfIn = NULL;
+	// add NULL terminate stream
+	pszStream[lFileSize] = 0;
+	//scResult = SXMLParser_Process(hObject, pszStream, sxMode);
+	V_CALL(SXMLParser_Process(hObject, pszStream, sxMode), scResult);
+V_END
+//lbExit:
+	if(pfIn)		fclose(pfIn);
+	if(pszStream)	free(pszStream);
+
+	return scResult;
+}
+// -----------------------------------------------------------------------------
+const TXMLElement *SXMLParser_EnumStart(HANDLE hObject)
+{
+	TXMLElement *pRootElement;
+
+	PTHIS->iElemIndex = 1;
+	pRootElement  = PTHIS->pXMLElement + 1;
+	if(pRootElement->iIndex == 1)	
+	{
+		return pRootElement;
+	}
+	return NULL;
+}
+// -----------------------------------------------------------------------------
+const TXMLElement *SXMLParser_EnumNext(HANDLE hObject)
+{
+	TXMLElement *pElement;
+
+	PTHIS->iElemIndex++;
+	if(PTHIS->iElemIndex > PTHIS->iXMLElementCount)
+	{
+		return NULL;
+	}
+	pElement = PTHIS->pXMLElement + PTHIS->iElemIndex;
+	return pElement;
+}
+// -----------------------------------------------------------------------------
+int SXMLParser_GetElementCount(HANDLE hObject)
+{
+	return PTHIS->iXMLElementCount;
+}
+// -----------------------------------------------------------------------------
+int SXMLParser_GetAttributeCount(HANDLE hObject)
+{
+	return PTHIS->iXMLAttributeCount;
+}
+// -----------------------------------------------------------------------------
+static const TXMLElement *SXMLParser_VGetElementByTag(HANDLE hObject, va_list vaList)
+{
+	char *pszTagName;
+	TXMLElement *pElement = PTHIS->pXMLElement + 1;
+	TXMLElement *pPrevElement = NULL;
+	
+	while((pszTagName = va_arg(vaList, char *)) != NULL)
+	{
+		int bFound = 0;
+		while(pElement && pElement->iIndex > 0)
+		{
+			if(strcmp(pElement->pszTagName, pszTagName) == 0)
+			{
+				pPrevElement = pElement;
+				pElement = pElement->pChild;
+				bFound = 1;
+				//DbgPrint("%s.", szTagName);
+				break;
+			}
+			pElement = pElement->pSibling;
+		}
+		if(!bFound)	return NULL;
+	}
+
+	return pPrevElement;
+}
+// -----------------------------------------------------------------------------
+const TXMLElement *SXMLParser_GetElementByXPath(HANDLE hObject, char *pszXPath)
+{
+	char *pszTagName;
+	char *pszNextTagName;	
+	TXMLElement *pElement = PTHIS->pXMLElement + 1;
+	TXMLElement *pPrevElement = NULL;
+	pszNextTagName = pszXPath;
+	do
+	{
+		int bFound = 0;
+		int iTagLen = 0;
+		pszTagName = pszNextTagName;
+		for(; *pszNextTagName != '_' && *pszNextTagName != 0; pszNextTagName++);
+		iTagLen = pszNextTagName - pszTagName;
+		while(pElement && pElement->iIndex > 0)
+		{
+			if( ( strlen( pElement->pszTagName ) == iTagLen ) && ( strncmp(pElement->pszTagName, pszTagName, iTagLen) == 0 ) )
+			{
+				pPrevElement = pElement;
+				pElement = pElement->pChild;
+				bFound = 1;
+				//DbgPrint("%s.", szTagName);
+				break;
+			}
+			pElement = pElement->pSibling;
+		}
+		if(!bFound)	return NULL;
+	}while((*pszNextTagName++)!=0);
+
+	return pPrevElement;
+}
+// -----------------------------------------------------------------------------
+const char *SXMLParser_GetTagValueByXPath(HANDLE hObject, char *pszXPath)
+{
+	const TXMLElement *pElement;
+
+	pElement = SXMLParser_GetElementByXPath(hObject, pszXPath);
+
+	if(pElement)	return pElement->pszTagValue;
+	
+	return NULL;
+}
+// -----------------------------------------------------------------------------
+SCODE SXMLParser_SetTagValueByXPath(HANDLE hObject, char *pszXPath, char *TagValue)
+{
+	const TXMLElement *pElement;
+
+	pElement = SXMLParser_GetElementByXPath(hObject, pszXPath);
+
+	if(!pElement)
+	{
+		return S_FAIL;
+	}
+	if(strlen(TagValue)>VALUESIZE || memcmp(pElement->pszTagName, "value", 5)!=0)
+	{
+		return S_FAIL;
+	}
+	memcpy(pElement->pszTagValue, TagValue, strlen(TagValue)+1);
+	return S_OK;
+	
+}
+// -----------------------------------------------------------------------------
+static const TXMLAttribute *SXMLParser_VGetAttrElemByName(HANDLE hObject, va_list vaList)
+{
+	const TXMLElement *pElement;
+	char *pszAttrName;
+
+	pszAttrName = va_arg(vaList, char *);
+	if(NULL == pszAttrName)	return NULL;
+	pElement = SXMLParser_VGetElementByTag(hObject, vaList);
+
+	if(pElement)
+	{
+		int i;
+
+		for(i = 0; i < pElement->iAttrCount; i++)
+		{
+			if(strcmp(pElement->pAttribute[i].pszName, pszAttrName) == 0)
+			{
+				return pElement->pAttribute + i;
+			}
+		}
+	}
+	return NULL;
+}
+// -----------------------------------------------------------------------------
+const TXMLElement *SXMLParser_GetElementByTag(HANDLE hObject, ...)
+{
+	va_list vaList;
+	const TXMLElement *pElement;
+
+	va_start(vaList, hObject);
+	pElement = SXMLParser_VGetElementByTag(hObject, vaList);
+	va_end(vaList);
+
+	return pElement;
+}
+// -----------------------------------------------------------------------------
+const TXMLElement *SXMLParser_GetElementByIndex(HANDLE hObject, int iIndex)
+{
+	if(iIndex > PTHIS->iXMLElementCount || iIndex < 1)	return NULL;
+	return PTHIS->pXMLElement + iIndex;
+}
+// -----------------------------------------------------------------------------
+const char *SXMLParser_GetTagValueByName(HANDLE hObject, ...)
+{
+	va_list vaList;
+	const TXMLElement *pElement;
+
+	va_start(vaList, hObject);
+	pElement = SXMLParser_VGetElementByTag(hObject, vaList);
+	va_end(vaList);
+
+	if(pElement)	return pElement->pszTagValue;
+	
+	return NULL;
+}
+// -----------------------------------------------------------------------------
+const char *SXMLParser_GetAttrValueByName(HANDLE hObject, ...)
+{
+	va_list vaList;
+	const TXMLAttribute *pAttribute;
+
+	va_start(vaList, hObject);
+	pAttribute = SXMLParser_VGetAttrElemByName(hObject, vaList);
+	va_end(vaList);
+
+	if(pAttribute)	return pAttribute->pszValue;
+	
+	return NULL;
+}
+// -----------------------------------------------------------------------------
+
+const char *SXMLParser_GetTagValueByIndex(HANDLE hObject, int iIndex)
+{
+	if(iIndex > PTHIS->iXMLElementCount || iIndex < 1)	return NULL;
+	return PTHIS->pXMLElement[iIndex].pszTagValue;
+}
+// -----------------------------------------------------------------------------
+const char *SXMLParser_GetAttrValueByIndex(HANDLE hObject, int iIndex)
+{
+	if(iIndex > PTHIS->iXMLAttributeCount || iIndex < 1)	return NULL;
+	return PTHIS->pXMLAttribute[iIndex].pszValue;
+}
+// -----------------------------------------------------------------------------
+int SXMLParser_GetTagIndex(HANDLE hObject, ...)
+{
+	va_list vaList;
+	const TXMLElement *pElement;
+
+	va_start(vaList, hObject);
+	pElement = SXMLParser_VGetElementByTag(hObject, vaList);
+	va_end(vaList);
+
+	if(pElement)	return pElement->iIndex;
+	return 0;
+}
+// -----------------------------------------------------------------------------
+int SXMLParser_GetAttrIndex(HANDLE hObject, ...)
+{
+	va_list vaList;
+	const TXMLAttribute *pAttribute;
+
+	va_start(vaList, hObject);
+	pAttribute = SXMLParser_VGetAttrElemByName(hObject, vaList);
+	va_end(vaList);
+
+	if(pAttribute)	return pAttribute->iIndex;
+	
+	return 0;
+}
+// -----------------------------------------------------------------------------
+

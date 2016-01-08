@@ -44,35 +44,41 @@ class Configer(object):
 			os.kill(pid, signal.SIGTERM)
 
 	def confclient(self, param):
-		return subprocess.Popen('./configer/confclient -p 99 -t Value -g %s' % param, shell=True, stdout = subprocess.PIPE)
+		return subprocess.Popen('./configer/confclient -x %s' % param, shell=True, stdout = subprocess.PIPE)
 
 	def fetch_value(self, param):
 
-		ret = None
-		returncode = '' 
-		retry = 5
+		ret = '' 
+		retry = 500 
 		client = None
 		configer = None
 
 		configer = self.start()
 
-		while returncode != 0 and retry != 0:
+		# Wait configer to complete the DOM in share memory
+		time.sleep(0.01)
+
+		while ret == '' and retry != 0:
 			client = self.confclient(param) 
 			client.wait()
 			returncode = client.returncode
+
+			ret = client.stdout.read()
+			ret = re.sub('\n', '', ret)
 			retry = retry - 1
-			if retry == 0:
+
+			if retry == 0 or returncode == 255:
 				self.stop(configer)
 				return None
-			#time.sleep(1)
-
-		for out in client.stdout: 	
-			out = re.sub('\n', '', out)
-			ret = out 
+			else:
+				time.sleep(0.01)
 
 		self.stop(configer)
 
-		return ret
+		if ret == '':
+			return None
+		else:
+			return ret
 
 
 # vim: tabstop=8 shiftwidth=8 softtabstop=8 noexpandtab

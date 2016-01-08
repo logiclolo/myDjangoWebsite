@@ -1,0 +1,112 @@
+#!/bin/sh
+ColorPrint()
+{
+	echo -e "\0033[$1m$2\0033[0m"
+}
+
+Run()
+{
+	ColorPrint "35" "$1"
+	echo "Run: $2"
+	echo "Result: `$2`"
+}
+
+Test()
+{
+	Run "$1" "$2"
+	if [ `$2` = "$3" ]; then
+		ColorPrint "32" "Test OK"
+	else
+		ColorPrint "31" "Test FAIL"
+	fi
+}
+
+CONFCLIENT=/home/ben/VS8101/apps/app_cluster/../../release/app_cluster_Build/armlinux_release/app/confclient.II/bin/confclient.II.out
+
+echo "Test Configer"
+Run "Get system_hostname by JavaScript type" "$CONFCLIENT -g system_hostname -p 6 -t JavaScript"
+Run "Get system_hostname by ShellScript type" "$CONFCLIENT -g system_hostname -p 6 -t ShellScript"
+Run "Get system_hostname by NameValue type" "$CONFCLIENT -g system_hostname -p 6 -t NameValue"
+Run "Get system_hostname by SingleQuo type" "$CONFCLIENT -g system_hostname -p 6 -t SingleQuo"
+Run "Get system_hostname by XML type" "$CONFCLIENT -g system_hostname -p 6 -t XML"
+Run "Get system_hostname by IW type" "$CONFCLIENT -g system_hostname -p 6 -t IW"
+Run "Get system_hostname by Value type" "$CONFCLIENT -g system_hostname -p 6 -t Value"
+Run "Get system by JavaScript type" "$CONFCLIENT -g system -p 6 -t JavaScript"
+Run "Get system by ShellScript type" "$CONFCLIENT -g system -p 6 -t ShellScript"
+Run "Get system by NameValue type" "$CONFCLIENT -g system -p 6 -t NameValue"
+Run "Get system by SingleQuo type" "$CONFCLIENT -g system -p 6 -t SingleQuo"
+Run "Get system by XML type" "$CONFCLIENT -g system -p 6 -t XML"
+Run "Get system by IW type" "$CONFCLIENT -g system -p 6 -t IW"
+Run "Get system by Value type" "$CONFCLIENT -g system -p 6 -t Value"
+Run "Get system with privilege 0" "$CONFCLIENT -g system -p 0"
+Run "Get system with privilege 1" "$CONFCLIENT -g system -p 1"
+Run "Get system with privilege 2" "$CONFCLIENT -g system -p 2"
+Run "Get system with privilege 3" "$CONFCLIENT -g system -p 3"
+Run "Get system with privilege 4" "$CONFCLIENT -g system -p 4"
+Run "Get system with privilege 5" "$CONFCLIENT -g system -p 5"
+Run "Get system with privilege 6" "$CONFCLIENT -g system -p 6"
+Run "Get system with privilege 7" "$CONFCLIENT -g system -p 7"
+Run "Get root with privilege 6" "$CONFCLIENT -g root -p 6"
+Run "Get root in buffer mode" "$CONFCLIENT -g root -p 6 -b"
+Run "Eval system" "eval `$CONFCLIENT -g system -p 6 -t ShellScript`;set|grep system"
+Run "Get alias system_hostname1" "$CONFCLIENT -g system_hostname1 -p 6"
+Run "Get invalid XXX" "$CONFCLIENT -g XXX -p 6"
+Run "Get invalid system_XXX" "$CONFCLIENT -g system_XXX -p 6"
+Run "Get system_date" "$CONFCLIENT -g system_date -p 6"
+Run "Get modifytime" "$CONFCLIENT -g modifytime -p 6"
+Test "Set system_hostname=XXX" "$CONFCLIENT -s system_hostname=XXX -p 6" "system_hostname=XXX"
+Test "Get system_hostname" "$CONFCLIENT -g system_hostname -p 6" "system_hostname=XXX"
+Test "Get system_hostname by NameValue type" "$CONFCLIENT -g system_hostname -p 6 -t NameValue" "system_hostname=XXX"
+Test "Get system_hostname by ShellScript type" "$CONFCLIENT -g system_hostname -p 6 -t ShellScript" "system_hostname=\"XXX\""
+Test "Get system_hostname by XML type" "$CONFCLIENT -g system_hostname -p 6 -t XML" "<root><system><hostname>XXX</hostname></system></root>"
+Test "Get system_hostname by Value type" "$CONFCLIENT -g system_hostname -p 6 -t Value" "XXX"
+Run "Set system_hostname=XXX by XML type" "$CONFCLIENT -s system_hostname=XXX -p 6 -t XML"
+Run "Set system_hostname=XXX by Value type" "$CONFCLIENT -s system_hostname=XXX -p 6 -t Value"
+Run "Set system_hostname=XXX by SingleQuo type" "$CONFCLIENT -s system_hostname=XXX -p 6 -t SingleQuo"
+Run "Set system_hostname=XXX by IW type" "$CONFCLIENT -s system_hostname=XXX -p 6 -t IW"
+Run "Set system_hostname=XXX by ShellScript type" "$CONFCLIENT -s system_hostname=XXX -p 6 -t ShellScript"
+Run "Set system_hostname=XXX by JavaScript type" "$CONFCLIENT -s system_hostname=XXX -p 6 -t JavaScript"
+Run "Set system_hostname=XXX with privilege 0" "$CONFCLIENT -s system_hostname=XXX -p 0"
+Run "Set system_hostname=XXX with privilege 1" "$CONFCLIENT -s system_hostname=XXX -p 1"
+Run "Set system_hostname=XXX with privilege 2" "$CONFCLIENT -s system_hostname=XXX -p 2"
+Run "Set system_hostname=XXX with privilege 3" "$CONFCLIENT -s system_hostname=XXX -p 3"
+Run "Set system_hostname=XXX with privilege 4" "$CONFCLIENT -s system_hostname=XXX -p 4"
+Run "Set system_hostname=XXX with privilege 5" "$CONFCLIENT -s system_hostname=XXX -p 5"
+Run "Set system_hostname=XXX with privilege 6" "$CONFCLIENT -s system_hostname=XXX -p 6"
+Run "Set system_hostname=XXX with privilege 7" "$CONFCLIENT -s system_hostname=XXX -p 7"
+Run "Set invalid system=XXX" "$CONFCLIENT -s system=XXX -p 6"
+Run "Set invalid system_XXX=XXX" "$CONFCLIENT -s system_XXX=XXX -p 6"
+Run "Set invalid XXX=XXX" "$CONFCLIENT -g XXX=XXX -p 6"
+Test "Set system_hostname=" "$CONFCLIENT -s system_hostname= -p 6" "system_hostname="
+Test "Set system_ledoff=-1" "$CONFCLIENT -s system_ledoff=-1 -p 6 -c" "system_ledoff=ERR_INVALID"
+Test "Set system_ledoff=1" "$CONFCLIENT -s system_ledoff=0 -p 6 -c" "system_ledoff=0"
+Test "Set system_ledoff=1" "$CONFCLIENT -s system_ledoff=1 -p 6 -c" "system_ledoff=1"
+Test "Set system_ledoff=2" "$CONFCLIENT -s system_ledoff=2 -p 6 -c" "system_ledoff=ERR_INVALID"
+Test "Set system_ledoff=XXX" "$CONFCLIENT -s system_ledoff=XXX -p 6 -c" "system_ledoff=ERR_INVALID"
+Test "Set di_i0_normalstate=xxx" "$CONFCLIENT -s di_i0_normalstate=xxx -p 6 -c" "di_i0_normalstate=ERR_INVALID"
+Test "Set di_i0_normalstate=high" "$CONFCLIENT -s di_i0_normalstate=high -p 6 -c" "di_i0_normalstate=high"
+Test "Set alias system_hostname1=XXX" "$CONFCLIENT -s system_hostname1=XXX -p 6" "system_hostname1=XXX"
+Run "Set system_datetime=100808162009.43" "$CONFCLIENT -g system_datetime=100808162009.43 -p 6"
+Test "Set modifytime=1" "$CONFCLIENT -s modifytime=1 -p 6" "modifytime=ERR_SECURITY"
+Run "Export group system to system.xml" "$CONFCLIENT -g system -p 6 -t XML > /mnt/ramdisk/system.xml"
+$CONFCLIENT -g system -p 6 -t XML > /mnt/ramdisk/system.xml
+Run "Apply system_hostname by JavaScript type" "$CONFCLIENT -a system_hostname -p 6 -f /mnt/ramdisk/system.xml -t JavaScript"
+Run "Apply system_hostname by ShellScript type" "$CONFCLIENT -a system_hostname -p 6 -f /mnt/ramdisk/system.xml -t ShellScript"
+Run "Apply system_hostname by IW type" "$CONFCLIENT -a system_hostname -p 6 -f /mnt/ramdisk/system.xml -t IW"
+Run "Apply system_hostname by SingleQuo type" "$CONFCLIENT -a system_hostname -p 6 -f /mnt/ramdisk/system.xml -t SingleQuo"
+Run "Apply system_hostname by Value type" "$CONFCLIENT -a system_hostname -p 6 -f /mnt/ramdisk/system.xml -t Value"
+Run "Apply system_hostname by NameValue type" "$CONFCLIENT -a system_hostname -p 6 -f /mnt/ramdisk/system.xml -t NameValue"
+Run "Apply system_hostname by XML type" "$CONFCLIENT -a system_hostname -p 6 -f /mnt/ramdisk/system.xml -t XML"
+rm /mnt/ramdisk/system.xml
+Run "Export all parameters to root.xml" "$CONFCLIENT -g root -p 6 -t XML -b > /mnt/ramdisk/root.xml"
+$CONFCLIENT -g root -p 6 -t XML > /mnt/ramdisk/root.xml
+Run "Apply system by JavaScript type" "$CONFCLIENT -a system -p 6 -f /mnt/ramdisk/root.xml -t JavaScript"
+Run "Apply system by ShellScript type" "$CONFCLIENT -a system -p 6 -f /mnt/ramdisk/root.xml -t ShellScript"
+Run "Apply system by IW type" "$CONFCLIENT -a system -p 6 -f /mnt/ramdisk/root.xml -t IW"
+Run "Apply system by SingleQuo type" "$CONFCLIENT -a system -p 6 -f /mnt/ramdisk/root.xml -t SingleQuo"
+Run "Apply system by Value type" "$CONFCLIENT -a system -p 6 -f /mnt/ramdisk/root.xml -t Value"
+Run "Apply system by NameValue type" "$CONFCLIENT -a system -p 6 -f /mnt/ramdisk/root.xml -t NameValue"
+Run "Apply system by XML type" "$CONFCLIENT -a system -p 6 -f /mnt/ramdisk/root.xml -t XML"
+Run "Apply all parameters" "$CONFCLIENT -a root -p 5 -f /mnt/ramdisk/root.xml"
+rm /mnt/ramdisk/root.xml
+

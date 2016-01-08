@@ -1,0 +1,68 @@
+#!/bin/sh
+#
+# rtsps: This starts and stops config manager
+#
+# description: Configuration manager
+#
+# processname: /usr/sbin/configer
+# config: /etc/conf.d/CDF.xml
+# pidfile: /var/run/configer.pid
+set -a
+
+PATH=/sbin:/bin:/usr/bin:/usr/sbin
+
+# Source function library.
+. /etc/init.d/functions
+
+# Get config.
+
+prog="configer"
+args="-i /etc/CDF.xml"
+binpath="/usr/sbin/configer"
+pidfile="/var/run/configer.pid"
+
+[ -f $binpath ] || exit 1
+
+start(){
+	echo -n "Starting $prog: "
+	start-stop-daemon -S -q -n $prog -m -p $pidfile -b -x $binpath -- $args
+#	$binpath $args &
+	echo "."
+}
+
+stop(){
+	echo -n "Stopping $prog: "
+	start-stop-daemon -K -q -n $prog -p $pidfile
+	waittodie $pidfile $binpath
+	rm $pidfile
+	echo "."
+}
+
+reload(){
+	echo -n "Reloading configuration $prog: "	
+	start-stop-daemon -K -s 1 -q -n $prog -p $pidfile
+	echo "."
+}
+
+# See how we were called.
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	reload)
+		reload
+		;;
+	restart)
+		stop
+		start
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart|reload}"
+		exit 1
+esac
+
+exit 0
+
