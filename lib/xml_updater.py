@@ -122,6 +122,8 @@ class Add(Base):
 
 	def handle_last_node(self, element, et_new_node, ori_object):
 
+		et_new_value_node = None 
+
 		# Handle ordinary config
 		if element.has_key('value'):
 			value = str(element['value'])
@@ -155,7 +157,26 @@ class Add(Base):
 					et_new_check_node.text = check
 					et_new_node.append(et_new_check_node)
 
-				# <value>
+			# <value>
+			if not et_new_value_node:
+				et_new_value_node = et.Element('value')
+				et_new_node.append(et_new_value_node)
+
+
+		# Handle CDF ...  
+		if element.has_key('aliasxpath'):
+			aliasxpath = element['aliasxpath']
+
+			tmp = Evaluator(aliasxpath, [aliasxpath], self.matrix)()	
+			aliasxpath = tmp[0]
+
+			# <aliasxpath>
+			et_new_aliasxpath_node = et.Element('aliasxpath')
+			et_new_aliasxpath_node.text = aliasxpath
+			et_new_node.append(et_new_aliasxpath_node)
+
+			# <value>
+			if not et_new_value_node:
 				et_new_value_node = et.Element('value')
 				et_new_node.append(et_new_value_node)
 
