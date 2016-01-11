@@ -41,24 +41,6 @@ class Base(object):
 		if debug:
 			print json.dumps(self.elements, indent=4, sort_keys=True)
 
-	def locate_config(self):
-
-		self.matrix_action['path'] = '' 
-
-		directory = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base', self.matrix_model)  
-		path = subprocess.Popen('find %s -iname %s' % (directory, self.confile), shell=True, stdout = subprocess.PIPE).stdout
-		for p in path: 	
-			p = re.sub('\n', '', p)
-			self.matrix_action['path'] = p
-
-		# the file could be in 'common'
-		if len(self.matrix_action['path']) == 0:
-			flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base', 'common')
-			path = subprocess.Popen('find %s -iname %s' % (flash_base, self.confile), shell=True, stdout = subprocess.PIPE).stdout
-			for p in path: 	
-				p = re.sub('\n', '', p)
-				self.matrix_action['path'] = p
-
 	def compose_detail_action(self):
 
 		elements = self.elements
