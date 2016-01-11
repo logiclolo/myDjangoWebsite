@@ -32,10 +32,24 @@ class Dispatcher(object):
 			print '\n%s' % path
 			self.et_object = et.parse(path, CommentedTreeBuilder())
 			self.et_root = self.et_object.getroot()
+
+			self.read_xml_declaration(path)
 		else:
 			return None 
 
 		self.dispatch()
+
+	def read_xml_declaration(self, path):
+		
+		fh = open(path, 'r')
+		tmp = fh.readline()
+
+		tmp = re.sub('\n', '', tmp)
+		m = re.search('<\?.*\?>', tmp)
+		if m:
+			self.matrix['declaration'] = tmp
+		else:
+			self.matrix['declaration'] = None 
 
 	def locate_config(self):
 
@@ -79,12 +93,14 @@ class Dispatcher(object):
 				ret = self.apply_xml_updater(Remove, content)
 
 		if ret:
-			XmlWriter(self.et_root, self.matrix['path'])
+			XmlWriter(self.et_root, self.matrix)
 
 
 class XmlWriter(object):
 
-	def __init__(self, elem, path):
+	def __init__(self, elem, matrix):
+		path = matrix['path']
+		self.xml_declaration = matrix['declaration']
 		content = self.prettify(elem, path)
 		self.output(path, content)
 
@@ -99,14 +115,19 @@ class XmlWriter(object):
 		tmp = re.sub('(\t+\s*\n+)+', '', tmp) 
 
 
+		# handle xml declaration
+		if self.xml_declaration is not None:
+			tmp = re.sub('<\?.*\?>', self.xml_declaration, tmp)
+		else:
+			tmp = re.sub('<\?.*\?>\n', '', tmp)
+
+
 		# handle different situation under CDF and config
 		# It's a workaround ... need more good solution
 		if os.path.basename(path) == 'CDF.xml':
-			tmp = re.sub('<\?.*\?>', '<?xml version="1.0" encoding="UTF-8"?>', tmp)
 			tmp = re.sub('<root>', '<root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">', tmp)
 		else:
 			# replace <tag/> with <tag></tag>
-			tmp = re.sub('<\?.*\?>\n', '', tmp)
 			tmp = re.sub(r'<(.*)/>', r'<\1></\1>', tmp)
 
 
