@@ -49,7 +49,7 @@ class Configer(object):
 	def fetch_value(self, param):
 
 		ret = '' 
-		retry = 500 
+		retry = 1000 
 		client = None
 		configer = None
 
