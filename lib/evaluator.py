@@ -7,6 +7,13 @@ from configer import *
 class Evaluator(object):
 	# Evaluate c<n>, s<m> or <TOTALSTREAMNUM> in the parameter 
 	#
+	# 
+	# arguments for __init__
+	# param: It's a string which decide how to evaluate 
+	# xpath: It's a list and all the elements are going to be evaluated
+	# matrix: the information metadata 
+	#
+	#
 	# the __call__ returns a list
 	
 
