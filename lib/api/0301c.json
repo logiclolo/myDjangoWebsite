@@ -87,6 +87,18 @@
 												"check": null
 											}
 										]
+									},
+									{
+										"method": "remove",
+										"element": [
+											{
+												"param": "videoin_c<n>_s<m>_h264_dintraperiod"
+											},
+											{
+												"cond": "ISSUPPORT_H265=true",
+												"param": "videoin_c<n>_s<m>_h265_dintraperiod"
+											}
+										]
 									}
 								]
 							},
@@ -99,6 +111,23 @@
 											{
 												"param": "capability_videoin_c<n>_dintraperiod_support",
 												"value": 0
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_videoin_c0.xml",
+								"content": [
+									{
+										"method": "remove",
+										"element": [
+											{
+												"param": "videoin_c<n>_s<m>_h264_dintraperiod"
+											},
+											{
+												"cond": "ISSUPPORT_H265=true",
+												"param": "videoin_c<n>_s<m>_h265_dintraperiod"
 											}
 										]
 									}
