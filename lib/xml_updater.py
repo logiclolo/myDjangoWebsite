@@ -138,13 +138,12 @@ class Add(Base):
 				et_new_node.text = value
 
 		# Handle CDF ...
-		if element.has_key('check'):
+		if element.has_key('check') and self.param_exist_already != True:
 			check = element['check']
-			if self.param_exist_already != True:
-				# <check>
-				if check != None and check != 'null':
-					check = str(check)
-					et_new_check_node = et.Element('check')
+			# <check>
+			if check != None and check != 'null':
+				check = str(check)
+				et_new_check_node = et.Element('check')
 
 				m = re.match('\?(.*)', check)
 				if m:
@@ -164,7 +163,7 @@ class Add(Base):
 
 
 		# Handle CDF ...  
-		if element.has_key('aliasxpath'):
+		if element.has_key('aliasxpath') and self.param_exist_already != True:
 			aliasxpath = element['aliasxpath']
 
 			tmp = Evaluator(aliasxpath, [aliasxpath], self.matrix)()	
