@@ -25,18 +25,20 @@ def check_envs():
 	return True
 
 def usage():
-	usage = 'Usage:%s -v http_api_version' % sys.argv[0]
+	usage = 'Usage: %s [-a version] [-f]\
+		\n\t-a\tversion is http_api_version\
+		\n\t-f\tsimply change the xml format' % sys.argv[0]   
 
 	print usage
 
 if __name__ == '__main__':
 
-	opts, args = getopt.getopt(sys.argv[1:], "hv:" )
+	opts, args = getopt.getopt(sys.argv[1:], "hfa:" )
 
 	#print opts
 	for opt, arg in opts:
-		if opt in ('-v', ''):
-			version = arg
+		if opt in ('-a', ''):
+			version = arg 
 		if opt in ('-h', ''):
 			usage()
 			sys.exit(0)
