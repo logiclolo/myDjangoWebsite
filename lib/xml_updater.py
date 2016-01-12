@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import sys, os
-import re 
+import re
 import json
 from pprint import pprint
 from xml.dom import minidom
@@ -34,6 +34,7 @@ class Base(object):
 		self.matrix = matrix
 		self.elements = elements
 		self.et_object = et_object
+		self.param_exist_already = True
 
 		self.compose_detail_action()
 
@@ -100,10 +101,10 @@ class Add(Base):
 	def detail_action(self, et_object, element):
 		et_new_node =  self.insert_new_xpath(et_object, element)
 
-		if et_new_node != None:
+		if et_new_node != None or self.param_exist_already:
 			return True
 		else:
-			print '\t' + bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' exists already !' 
+			print '\t' + bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' exists already !'
 			return False
 
 	def insert_new_xpath(self, et_object, element):
@@ -112,24 +113,27 @@ class Add(Base):
 		et_ori_object = et_object
 		xpaths = element['xpath']
 
-		for xpath in xpaths: 
+		for xpath in xpaths:
 			# travel every node of the given xpath
 			# if the node is not in the xml tree, then insert it
 			trace = xpath.split('_')
-			for node in trace:	
+			for node in trace:
 				ori_object = et_object
 				et_object = et_object.find(node)
 				if et_object == None:
+					self.param_exist_already = False
 					et_new_node = et.Element(node)
 
-					# the last node in the xpath 
+					# the last node in the xpath
 					if  node == trace[-1]:
 						self.handle_last_node(element, et_new_node, ori_object)
 
 
 					ori_object.append(et_new_node)
-					et_object = ori_object.find(node) 
+					et_object = ori_object.find(node)
 
+			if self.param_exist_already:
+				self.handle_last_node(element, et_object, ori_object)
 			et_object = et_ori_object
 
 		return et_new_node
@@ -142,35 +146,36 @@ class Add(Base):
 			m = re.match('\?(.*)', value)
 			if m:
 				# default value
-				et_new_node.text = m.group(1) 
+				et_new_node.text = m.group(1)
 				#et_comment_node = et.Comment('[Notice] Please modify the default value below !!!')
 				et_comment_node = et.Comment('Modify it')
 				ori_object.append(et_comment_node)
 			else:
-				et_new_node.text = value 
+				et_new_node.text = value
 
-		# Handle CDF ...  
+		# Handle CDF ...
 		if element.has_key('check'):
 			check = element['check']
-			# <check>
-			if check != None and check != 'null':
-				check = str(check)
-				et_new_check_node = et.Element('check')
+			if self.param_exist_already != True:
+				# <check>
+				if check != None and check != 'null':
+					check = str(check)
+					et_new_check_node = et.Element('check')
 
 				m = re.match('\?(.*)', check)
 				if m:
 					# default check value
-					et_new_check_node.text = m.group(1) 
+					et_new_check_node.text = m.group(1)
 					#et_comment_node = et.Comment('[Notice] Please modify the check value below !!!')
 					et_comment_node = et.Comment('Modify it')
 					et_new_node.append(et_comment_node)
 				else:
 					et_new_check_node.text = check
-				et_new_node.append(et_new_check_node)
+					et_new_node.append(et_new_check_node)
 
-			# <value>
-			et_new_value_node = et.Element('value')
-			et_new_node.append(et_new_value_node)
+				# <value>
+				et_new_value_node = et.Element('value')
+				et_new_node.append(et_new_value_node)
 
 class Remove(Base):
 	""" Remove the tag from XML """
