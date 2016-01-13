@@ -44,7 +44,8 @@ class Configer(object):
 			os.kill(pid, signal.SIGTERM)
 
 	def confclient(self, param):
-		return subprocess.Popen('./configer/confclient -x %s' % param, shell=True, stdout = subprocess.PIPE)
+		devnull = open(os.devnull, 'wb')
+		return subprocess.Popen('./configer/confclient -x %s' % param, shell=True, stdout = subprocess.PIPE, stderr=devnull)
 
 	def fetch_value(self, param):
 
