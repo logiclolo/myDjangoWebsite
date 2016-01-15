@@ -9,6 +9,8 @@ from lxml import etree
 import subprocess
 import HTMLParser
 import bcolors
+import pprint
+from utility import *
 from copy import deepcopy
 from configer import *
 from check_cond import *
@@ -75,8 +77,8 @@ class RuleParser(object):
 			#question['ans'] = ans
 			qid = question['id']
 			matrix['answer'][qid] = ans
-		else:
-			print 'No need to ask.'
+		#else:
+			#print 'No need to ask.'
 
 	def initial_matrix(self):
 
@@ -123,6 +125,40 @@ class RuleParser(object):
 				name[key] = value
 		return deepcopy(name)
 
+	def check_file_well_formed(self):
+		data = open(self.api_rule).read()
+		jdata = json.loads(data)
+
+		if not jdata.has_key('version') and not jdata.has_key('content'):
+			error_msg()
+
+		self.version = jdata['version']
+		content = jdata['content']
+		specs = jdata['content']['spec']
+
+		confiles = []
+		for spec in specs:
+			tasks = spec['task']
+			for task in tasks:
+				actions = task['action']
+				for action in actions:
+					config = action['file']
+					confiles.append(config)
+
+		confile_path = []
+		for model in self.models:
+			for confile in confiles:
+				tmp = locate_file(model, confile)
+				if tmp not in confile_path:
+					confile_path.append(tmp)
+
+		ret = []
+		for path in confile_path:
+			if not is_xml_well_formed(path):
+				ret.append(path)
+
+		return ret
+
 	def parse_common_rule(self):
 		data = open(self.common_rule).read()
 		jdata = json.loads(data)
@@ -151,9 +187,6 @@ class RuleParser(object):
 		self.version = jdata['version']
 		content = jdata['content']
 		specs = jdata['content']['spec']
-
-		#InfoCollector(self.matrix, specs).main()
-		#sys.exit(0)
 
 		# compose the self.matrix
 		# which contains all the information we need

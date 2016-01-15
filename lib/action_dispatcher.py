@@ -12,6 +12,8 @@ from configer import *
 from check_cond import *
 from evaluator import *
 from xml_updater import *
+from utility import *
+import config
 
 if sys.version_info[:2] >= (2, 5):
 	import xml.etree.ElementTree as et 
@@ -25,11 +27,10 @@ class Dispatcher(object):
 		self.contents = action['content']
 		self.matrix = matrix
 
-		self.locate_config()
+		self.get_file_path()
 		
 		path = self.matrix['path']
 		if path != '':
-			print '\n%s' % path
 			self.et_object = et.parse(path, CommentedTreeBuilder())
 			self.et_root = self.et_object.getroot()
 
@@ -37,7 +38,15 @@ class Dispatcher(object):
 		else:
 			return None 
 
-		self.dispatch()
+		#  'modify xml tree' or 'just format'
+		if config.g_format:
+			if not path in config.g_format_list: 
+				config.g_format_list.append(path)
+				print 'formatting ... %s' % path
+				XmlWriter(self.et_root, self.matrix)
+		else:
+			print 'Modifying ... %s' % path
+			self.dispatch()
 
 	def read_xml_declaration(self, path):
 		
@@ -51,26 +60,13 @@ class Dispatcher(object):
 		else:
 			self.matrix['declaration'] = None 
 
-	def locate_config(self):
+	def get_file_path(self):
 
 		self.matrix['path'] = '' 
 		model = self.matrix['model']
 		confile = self.confile
 
-		directory = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base', model)  
-		path = subprocess.Popen('find %s -iname %s' % (directory, confile), shell=True, stdout = subprocess.PIPE).stdout
-		for p in path: 	
-			p = re.sub('\n', '', p)
-			self.matrix['path'] = p
-
-		# the file could be in 'common'
-		if len(self.matrix['path']) == 0:
-			flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base', 'common')
-			path = subprocess.Popen('find %s -iname %s' % (flash_base, confile), shell=True, stdout = subprocess.PIPE).stdout
-			for p in path: 	
-				p = re.sub('\n', '', p)
-				self.matrix['path'] = p
-
+		self.matrix['path'] = locate_file(model, confile)
 
 	def apply_xml_updater(self, md, content):
 		matrix = self.matrix
