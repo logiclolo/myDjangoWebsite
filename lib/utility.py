@@ -5,6 +5,8 @@ import re
 import json
 import bcolors
 import subprocess
+import pprint
+from config import * 
 
 
 def output(filename, content):
@@ -71,9 +73,8 @@ def choose_model(model_file):
 		sys.exit(0)
 
 	print bcolors.WARNING
-	print 'Modify \'%s\' if you want to change models' % model_file
+	print 'Modify \'%s\' if you want to change models' % model_file + bcolors.NORMAL
 	print 'Press any key to continue or \'q\' to exit ...'
-	print bcolors.NORMAL
 
 	ans = getch()
 	if ans == 'q':
@@ -94,6 +95,76 @@ def strip_model(model):
 
 	return tmp
 
+
+def locate_file(model, confile):
+
+	# search in 'flashfs_base' first
+	base = os.path.join(g_flashfs_base, model)  
+	cmd = 'find %s -iname %s' % (base, confile)
+	path = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE).stdout
+	for p in path: 	
+		p = re.sub('\n', '', p)
+		return p
+
+	# and then search in 'common'
+	base = os.path.join(g_flashfs_base, 'common')
+	cmd = 'find %s -iname %s' % (base, confile)
+	path = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE).stdout
+	for p in path: 	
+		p = re.sub('\n', '', p)
+		return p
+
+	return None 
+
+def is_xml_well_formed(path):
+	tmp = []
+	cflag = 'end' # flag for comment line
+
+	fh = open(path, 'r')
+	line = fh.readline()
+
+	while line:
+		# <root>...</root>
+		m1 = re.match('\t*\s*<.*>.*</.*>$', line)
+		# <root>
+		m2 = re.match('\t*\s*<.*>$', line)
+		# </root>
+		m3 = re.match('\t*\s*</.*>$', line)
+
+		# <!-- ... -->
+		m4 = re.match('\t*\s*<!--.*-->', line)
+		# <!-- 
+		m5 = re.match('\t*\s*<!--', line)
+		# --> 
+		m6 = re.match('\t*\s*-->', line)
+
+		# <root/>
+		m7 = re.match('\t*\s*<.*/>$', line)
+
+
+		if m1 or m2 or m3 or m4:
+			pass
+		elif m5:
+			cflag = 'start'
+		elif m6:
+			cflag = 'end'
+		elif m7:
+			if path == 'CDF.xml':
+				pass
+			else:
+				tmp.append(repr(line))
+		else:
+			if cflag == 'end':
+				tmp.append(repr(line))
+
+		line = fh.readline()
+
+	if len(tmp) > 0:
+		#pp = pprint.PrettyPrinter(indent=4)
+		#pp.pprint(tmp)
+		return False 
+	else:
+		return True
 
 
 class _Getch:
