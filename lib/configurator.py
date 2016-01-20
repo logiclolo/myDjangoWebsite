@@ -17,8 +17,13 @@ def action_dispatch(matrix):
 
 def update_config(matrix):
 	for m in matrix:
+		configer = Configer(m['model'])
+		m['configer'] = configer
+
 		print bcolors.BLUE + 'handle %s ...' % m['model'] + bcolors.NORMAL
 		action_dispatch(m)
+
+		configer.stop()
 
 def check_envs():
 	if not os.getenv('PRODUCTDIR'):

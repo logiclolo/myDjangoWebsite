@@ -44,6 +44,7 @@ def check_detail_cond(cond, matrix):
 	match = ''
 	value = None 
 	model = matrix['model']
+	configer = matrix['configer']
 
 	flag = True 
 
@@ -105,7 +106,7 @@ def check_detail_cond(cond, matrix):
 
 	# use configer to fetch the parameter value
 	if param != '' and value == None:
-		value = Configer(model).fetch_value(param)
+		value = configer.fetch_value(param)
 
 
 	# if the value is None, it means that the parameter is not maintained by configer

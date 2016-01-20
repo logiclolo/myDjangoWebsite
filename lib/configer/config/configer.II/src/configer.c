@@ -1044,7 +1044,6 @@ void ReplaceTagName( TXMLElement *pElement, const char* szBeforeTag, const char 
 
 void GetCDFParam( TXMLElement *pElement, TCDFParam *pCDFParam)
 {
-	/*int tmp[128]; */
 	pCDFParam->pszValue = (char *)pElement->pszTagValue;
 	if( pElement->pParent != NULL )
 	{
@@ -1056,8 +1055,6 @@ void GetCDFParam( TXMLElement *pElement, TCDFParam *pCDFParam)
 	{
 		if( strncmp( pElement->pszTagName, "cfgfile", 8 ) == 0 )
 		{
-			/*sprintf(tmp,"%s%s", "/home/logic.lo/project/onefw/trunk/flashfs_base/FD9171", pElement->pszTagValue);*/
-			/*pCDFParam->pszCFGFile = tmp;*/
 			pCDFParam->pszCFGFile = pElement->pszTagValue;
 		}
 		else if( strncmp( pElement->pszTagName, "seclevel", 9 ) == 0 )
@@ -1127,8 +1124,6 @@ void GetCDFParam( TXMLElement *pElement, TCDFParam *pCDFParam)
 		{
 			if( ( pCDFParam->pszCFGFile == NULL ) && ( strncmp( pElement->pszTagName, "cfgfile", 8 ) == 0 ) )
 			{
-				/*sprintf(tmp,"%s%s", "/home/logic.lo/project/onefw/trunk/flashfs_base/FD9171", pElement->pszTagValue);*/
-				/*pCDFParam->pszCFGFile = tmp;*/
 				pCDFParam->pszCFGFile = pElement->pszTagValue;
 			}
 			else if( ( pCDFParam->pszSecLevel == NULL ) && ( strncmp( pElement->pszTagName, "seclevel", 9 ) == 0 ) )
@@ -2659,7 +2654,8 @@ int main( int argc, char *argv[] )
 	//20101123 Added by danny For support advanced system log
 	char *pszSrch;
 	const char *pcSetParamLevel = NULL;
-	char szCwd[1024];
+	char szCwd[512];
+	char szSocketPath[512];
 
 	if (getcwd(szCwd, sizeof(szCwd)) != NULL)
 	{
@@ -2709,7 +2705,15 @@ int main( int argc, char *argv[] )
 	V_CALL_CHKNEQ_EX( semctl( iSemId, 0, SETVAL, semunConfiger ), iRet, -1, return 1; );
 
 	signal( SIGPIPE,SIG_IGN );
-	V_CALL_CHKNEQ_EX( CreateUnixSocket( SOCKETPATH ), iFDSck, -1, return 1; );
+
+	// Make sure to create $HOME/tmp first
+	// if $HOME/tmp doesn't exist then CreateUnixSocket() will fail
+	strcat(szSocketPath, getenv("HOME"));
+	strcat(szSocketPath, "/tmp");
+	mkdir(szSocketPath, 0755);
+	strcat(szSocketPath, "/configer");
+
+	V_CALL_CHKNEQ_EX( CreateUnixSocket( szSocketPath ), iFDSck, -1, return 1; );
 	listen( iFDSck, 5 );
 	memset( &g_Sig, 0, sizeof( g_Sig ) );
 	memset( &g_Process, 0, sizeof( g_Process ) );
@@ -2859,7 +2863,7 @@ int main( int argc, char *argv[] )
 	}
 	while(!g_bTerminated);
 	close( iFDSck );
-	if (unlink( SOCKETPATH ) != 0)
+	if (unlink( szSocketPath ) != 0)
 	{
 	       perror("unlink");
 	}

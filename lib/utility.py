@@ -167,6 +167,12 @@ def is_xml_well_formed(path):
 		return True
 
 
+def jason_default(o):
+	if isinstance(o, set):
+		return list(o)
+	return o.__dict__
+
+
 class _Getch:
     """Gets a single character from standard input.  Does not echo to the screen."""
     def __init__(self):

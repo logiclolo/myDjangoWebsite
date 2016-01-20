@@ -31,9 +31,8 @@ class Evaluator(object):
 
 	def eval_stream_number(self):
 		xpath = self.xpath
-		model = self.matrix['model']
 
-		stream_number = Configer(model).fetch_value('capability_nmediastream')
+		stream_number = self.matrix['content']['TOTALSTREAMNUM']
 		stream_number = int(stream_number)
 
 		tmp = []

@@ -14,7 +14,6 @@ from utility import *
 from copy import deepcopy
 from configer import *
 from check_cond import *
-from info_collector import *
 
 if sys.version_info[:2] >= (2, 5):
 	import xml.etree.ElementTree as et
@@ -118,12 +117,13 @@ class RuleParser(object):
 				break
 
 	def compose_internal_param_dict(self, name, matrix):
-		for key, value in name.iteritems():
+		tmp = deepcopy(name)
+		for key, value in tmp.iteritems():
 			m = re.search('_', str(value))
 			if m:
-				value = Configer(matrix['model']).fetch_value(str(value))
-				name[key] = value
-		return deepcopy(name)
+				value = matrix['configer'].fetch_value(str(value))
+				tmp[key] = value
+		return deepcopy(tmp)
 
 	def check_file_well_formed(self):
 		data = open(self.api_rule).read()
@@ -142,8 +142,9 @@ class RuleParser(object):
 			for task in tasks:
 				actions = task['action']
 				for action in actions:
-					config = action['file']
-					confiles.append(config)
+					if action.has_key('file'):
+						config = action['file']
+						confiles.append(config)
 
 		confile_path = []
 		for model in self.models:
@@ -168,13 +169,18 @@ class RuleParser(object):
 
 		# parse rule.json and save the info to matrix
 		for m in self.matrix:
+			configer = Configer(m['model'])
+			m['configer'] = configer
+
 			m['content'] = self.compose_internal_param_dict(jdata['name'], m)
 			for content in jdata['content']:
 				self.handle_detail_common_rule(m, content)
 
+			configer.stop()
+
 
 		if debug:
-			print json.dumps(self.matrix, indent=4, sort_keys=True)
+			print json.dumps(self.matrix, indent=4, sort_keys=True, default=jason_default)
 			print '\n\n'
 
 	def parse_api_rule(self):
@@ -191,10 +197,15 @@ class RuleParser(object):
 		# compose the self.matrix
 		# which contains all the information we need
 		for m in self.matrix:
+			configer = Configer(m['model'])
+			m['configer'] = configer
+
 			self.parse_detail_api_rule(m, specs)
 
+			configer.stop()
+
 		if debug:
-			print json.dumps(self.matrix, indent=4, sort_keys=True)
+			print json.dumps(self.matrix, indent=4, sort_keys=True, default=jason_default)
 			print '\n\n'
 
 	def parse_detail_api_rule(self, matrix, specs):
