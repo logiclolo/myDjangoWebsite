@@ -59,7 +59,6 @@ class Configer(object):
 			os.kill(pid, signal.SIGTERM)
 
 	def confclient(self, param):
-		#print self.check_configer_alive_from_ps()
 		devnull = open(os.devnull, 'wb')
 		return subprocess.Popen('./configer/confclient -x %s' % param, shell=True, stdout = subprocess.PIPE, stderr=devnull)
 
