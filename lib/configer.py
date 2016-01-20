@@ -16,7 +16,14 @@ class Configer(object):
 		self.cdf = os.path.join(flash_base, model, 'etc', 'CDF.xml')
 		self.prefix_etc = os.path.join(flash_base, model)
 
+		self.start()
+
 	def start(self):
+		# skip if configer is already in background
+		check = self.get_configer_from_ps()
+		if check.readline() != '':
+			return None
+
 		ld_library_path = os.path.join(os.getcwd(), 'configer', 'lib') 
 		env = dict(os.environ)
 		env['LD_LIBRARY_PATH'] = ld_library_path
@@ -24,10 +31,18 @@ class Configer(object):
 		#p = subprocess.Popen('LD_LIBRARY_PATH=%s ./configer/configer -d -i %s -e %s' % (ld_library_path, self.cdf, self.prefix_etc), shell=True)
 		p = subprocess.Popen(('./configer/configer', '-d', '-i', self.cdf, '-e', self.prefix_etc), env=env)
 
-		#print p.pid
+		time.sleep(0.02)
+
 		return p
 
-	def stop(self, subprocess_p):
+	def get_configer_from_ps(self):
+		user = getpass.getuser()
+		cmd = 'ps aux | grep %s | grep "configer/configer" | grep -v grep' % user
+		results = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE).stdout
+
+		return results
+
+	def stop(self):
 
 		# this can't terminate the configer process because of the wrong pid
 		# it need to be check
@@ -36,10 +51,10 @@ class Configer(object):
 
 		# workaround
 		# use 'ps' to get the configer process and terminate it
-		user = getpass.getuser()
-		results = subprocess.Popen('ps aux | grep %s | grep "configer/configer" | grep -v grep' % user, shell=True, stdout = subprocess.PIPE).stdout
-		for r in results:
-			pid = r.split()[1]
+
+		check = self.get_configer_from_ps()
+		for c in check:
+			pid = c.split()[1]
 			pid = int(pid)
 			os.kill(pid, signal.SIGTERM)
 
@@ -54,11 +69,6 @@ class Configer(object):
 		client = None
 		configer = None
 
-		configer = self.start()
-
-		# Wait configer to complete the DOM in share memory
-		time.sleep(0.01)
-
 		while ret == '' and retry != 0:
 			client = self.confclient(param) 
 			client.wait()
@@ -69,12 +79,9 @@ class Configer(object):
 			retry = retry - 1
 
 			if retry == 0 or returncode == 255:
-				self.stop(configer)
 				return None
 			else:
 				time.sleep(0.01)
-
-		self.stop(configer)
 
 		if ret == '':
 			return None
