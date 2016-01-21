@@ -14,6 +14,7 @@ from utility import *
 from copy import deepcopy
 from configer import *
 from check_cond import *
+import config
 
 if sys.version_info[:2] >= (2, 5):
 	import xml.etree.ElementTree as et
@@ -220,12 +221,17 @@ class RuleParser(object):
 			if spec.has_key('task'):
 				tasks = spec['task']
 
-			for question in questions:
-				self.ask_user(question, matrix)
-
-			for task in tasks:
-				if check_cond(task['cond'], matrix):
+			# format or update 
+			if config.g_format:
+				for task in tasks:
 					matrix['action'] = matrix['action'] + task['action']
+			else:
+				for question in questions:
+					self.ask_user(question, matrix)
+
+				for task in tasks:
+					if check_cond(task['cond'], matrix):
+						matrix['action'] = matrix['action'] + task['action']
 
 
 

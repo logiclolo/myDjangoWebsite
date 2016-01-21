@@ -32,16 +32,17 @@ def check_envs():
 	return True
 
 def usage():
-	usage = 'Usage: %s [-a version] [-f]\
-		\n\t-a\tSpecify a  http_api_version\
-		\n\t-f\tFormat the CDF/configs' % sys.argv[0]   
+	usage = 'Usage: %s [-a version] [-f version]\
+		\n\t-a\tSpecify a http_api_version to update\
+		\n\t-f\tSpecify a http_api_version to format'\
+		% sys.argv[0]   
 
 	print usage
 
 if __name__ == '__main__':
 	
 	version = ''
-	opts, args = getopt.getopt(sys.argv[1:], "hfa:" )
+	opts, args = getopt.getopt(sys.argv[1:], "ha:f:" )
 
 	#print opts
 	for opt, arg in opts:
@@ -49,6 +50,7 @@ if __name__ == '__main__':
 			version = arg 
 		if opt in ('-f', ''):
 			config.g_format = True
+			version = arg 
 		if opt in ('-h', ''):
 			usage()
 			sys.exit(0)
@@ -74,6 +76,8 @@ if __name__ == '__main__':
 
 	obj = RuleParser(path, model)
 
+
+	# Check whether the file is formatted or not
 	if not config.g_format:
 		tmp = obj.check_file_well_formed()
 
