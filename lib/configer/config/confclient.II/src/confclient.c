@@ -84,7 +84,7 @@ int main( int argc, char *argv[] )
 				else
 				{
 					/*printf( "%s is invalid\n", szXPath );*/
-					return -1;
+					return 1;
 				}
 				break;
 			case 'p':
