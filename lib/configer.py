@@ -78,7 +78,7 @@ class Configer(object):
 			ret = re.sub('\n', '', ret)
 			retry = retry - 1
 
-			if retry == 0 or returncode == 255:
+			if retry == 0 or returncode == 1:
 				return None
 			else:
 				time.sleep(0.01)
