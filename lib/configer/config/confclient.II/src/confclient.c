@@ -10,6 +10,8 @@
 #define MODULE_VERSION_STR "2.0.0.0"
 #define MODIFY_DATETIME "2009/10/13 13:11:48"
 volatile char rcsid[] = "$Id: " MODULE_VERSION_STR ",confclient," MODIFY_DATETIME " $";
+#define PARAM_IS_OK 0
+#define PARAM_IS_NOT_EXIST 2
 
 void Usage(void)
 {
@@ -79,12 +81,12 @@ int main( int argc, char *argv[] )
 				{
 					/*printf( "%s=%s\n", szXPath, szValue );*/
 					printf( "%s\n", szValue );
-					return 0;
+					return PARAM_IS_OK;
 				}
 				else
 				{
 					/*printf( "%s is invalid\n", szXPath );*/
-					return 1;
+					return PARAM_IS_NOT_EXIST;
 				}
 				break;
 			case 'p':

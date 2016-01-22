@@ -78,7 +78,14 @@ class Configer(object):
 			ret = re.sub('\n', '', ret)
 			retry = retry - 1
 
-			if retry == 0 or returncode == 1:
+			# different returncode has its own meaning
+			#
+			# (1) returncode=0, confclient get the param successfully
+			# (2) returncode=1, configer is not ready for confclient to connect 
+			# (3) returncode=2, the param does't exist
+			# (4) returncode=255, same as (2) but using 'confclient -g'
+
+			if retry == 0 or returncode == 2:
 				return None
 			else:
 				time.sleep(0.01)
