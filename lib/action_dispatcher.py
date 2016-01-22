@@ -23,6 +23,10 @@ else:
 class Dispatcher(object):
 
 	def __init__(self, action, matrix):
+
+		if not action.has_key('file'):
+			return None
+
 		self.confile = action['file'] 
 		self.contents = action['content']
 		self.matrix = matrix
