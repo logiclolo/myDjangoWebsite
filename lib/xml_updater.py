@@ -15,18 +15,18 @@ from check_cond import *
 from evaluator import *
 
 if sys.version_info[:2] >= (2, 5):
-	import xml.etree.ElementTree as et 
+	import xml.etree.ElementTree as et
 else:
-	import elementtree.ElementTree as et 
+	import elementtree.ElementTree as et
 
-#debug = True 
-debug = False 
+#debug = True
+debug = False
 
 class Base(object):
 	confile = ''
 	method = ''
 	matrix = {}
-	matrix_action = {} 
+	matrix_action = {}
 	matrix_contents = []
 	matrix_model = ''
 
@@ -47,34 +47,34 @@ class Base(object):
 
 		for element in elements:
 			xpaths = element['param']
-			element['xpath'] = [] 
+			element['xpath'] = []
 
 			for xpath in xpaths.split('&'):
 				element['xpath'].append(deepcopy(xpath))
 
 				m = re.search('<.*>', xpath)
 				if m:
-					# The evaluated result is saved to element['xpath']  
+					# The evaluated result is saved to element['xpath']
 					# and after that self.action() would use these detail
 					element['xpath'] = Evaluator(xpath, element['xpath'], self.matrix)()
 
 	def action(self):
 
-		stain = False 
+		stain = False
 
 		elements = self.elements
 		et_object = self.et_object
 
 		for element in elements:
-			if element.has_key('cond') and not check_cond(element['cond'], self.matrix): 
+			if element.has_key('cond') and not check_cond(element['cond'], self.matrix):
 				continue
 
 			stain = stain | self.detail_action(et_object, element)
 
 		if stain:
-			return True 
+			return True
 		else:
-			return False 
+			return False
 
 
 class Add(Base):
@@ -122,7 +122,7 @@ class Add(Base):
 
 	def handle_last_node(self, element, et_new_node, ori_object):
 
-		et_new_value_node = None 
+		et_new_value_node = None
 
 		# Handle ordinary config
 		if element.has_key('value'):
@@ -162,11 +162,11 @@ class Add(Base):
 				et_new_node.append(et_new_value_node)
 
 
-		# Handle CDF ...  
+		# Handle CDF ...
 		if element.has_key('aliasxpath') and self.param_exist_already != True:
 			aliasxpath = element['aliasxpath']
 
-			tmp = Evaluator(aliasxpath, [aliasxpath], self.matrix)()	
+			tmp = Evaluator(aliasxpath, [aliasxpath], self.matrix)()
 			aliasxpath = tmp[0]
 
 			# <aliasxpath>
@@ -188,7 +188,7 @@ class Remove(Base):
 		if ret:
 			return True
 		else:
-			print '\t' + bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' does not exist !' 
+			print '\t' + bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' does not exist !'
 			return False
 
 	def remove_xpath(self, et_object, element):
@@ -196,7 +196,7 @@ class Remove(Base):
 		ret = False
 		xpaths = element['xpath']
 
-		for xpath in xpaths: 
+		for xpath in xpaths:
 			xpath = re.sub('_', '/', xpath)
 			m = re.match('(.*)/(.*)$', xpath)
 			if m:
@@ -226,7 +226,7 @@ class Modify(Base):
 				stain = True
 
 		if not stain:
-			print '\t' + bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' does not exist !' 
+			print '\t' + bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' does not exist !'
 
 		return stain
 
@@ -237,15 +237,15 @@ class Modify(Base):
 			m = re.match('\?(.*)', value)
 			if m:
 				# default value
-				et_target_tag.text = m.group(1) 
+				et_target_tag.text = m.group(1)
 			else:
-				et_target_tag.text = value 
+				et_target_tag.text = value
 
 		# Handle CDF
 		if element.has_key('check'):
 			et_child_tag = et_target_tag.find('check')
 
-			if et_child_tag != None: 
+			if et_child_tag != None:
 				value = str(element['check'])
 
 				# if value start with '+' or '-'
@@ -255,8 +255,8 @@ class Modify(Base):
 					self.insert_sub_text(et_child_tag, m1.group(1))
 				elif m2:
 					self.remove_sub_text(et_child_tag, m2.group(1))
-				else:	
-					et_child_tag.text = value 
+				else:
+					et_child_tag.text = value
 
 	def insert_sub_text(self, et_child_tag, sub_text):
 		subs = []
@@ -285,7 +285,7 @@ class CommentedTreeBuilder ( et.XMLTreeBuilder ):
 	def __init__ ( self, html = 0, target = None ):
 		et.XMLTreeBuilder.__init__( self, html, target )
 		self._parser.CommentHandler = self.handle_comment
-    
+
 	def handle_comment ( self, data ):
 		self._target.start( et.Comment, {} )
 		self._target.data( data )

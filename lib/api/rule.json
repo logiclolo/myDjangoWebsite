@@ -4,8 +4,10 @@
 		"CAMERA_TYPE":"Standard",
 		"ISSUPPORT_H265":false,
 		"ISSUPPORT_SS1":false,
+		"ISSUPPORT_WDRPRO":false,
 		"TOTALSTREAMNUM":"capability_nmediastream",
-		"TOTALPROFILENUM":"capability_nvideoinprofile"
+		"TOTALPROFILENUM":"capability_nvideoinprofile",
+		"IRIS_TYPE":"Piris"
 	},
 	"content": [
 		{
@@ -69,6 +71,32 @@
 				{
 					"cond":"'smart' in 'videoin_c0_s0_h264_ratecontrolmode'",
 					"value":true
+				}
+			]
+		},
+		{
+			"param":"ISSUPPORT_WDRPRO",
+			"rule":[
+				{
+					"cond":"capability_image_c0_wdrpro_mode!=0",
+					"value":true
+				}
+			]
+		},
+		{
+			"param":"IRIS_TYPE",
+			"rule":[
+				{
+					"cond":"capability_image_c0_iristype=-",
+					"value":"Fixediris"
+				},
+				{
+					"cond":"capability_image_c0_iristype=piris",
+					"value":"Piris"
+				},
+				{
+					"cond":"capability_image_c0_iristype=dciris",
+					"value":"DCiris"
 				}
 			]
 		}
