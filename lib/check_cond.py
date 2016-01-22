@@ -60,7 +60,7 @@ def check_detail_cond(cond, matrix):
 		if answer.has_key(qid):
 			value = answer[qid]
 		else:
-			return False
+			value = 'null'
 
 
 	# eg. qid[1].val!=1
@@ -75,7 +75,7 @@ def check_detail_cond(cond, matrix):
 		if answer.has_key(qid):
 			value = answer[qid]
 		else:
-			return False
+			value = 'null'
 			
 
 	# eg. 'FD' in 'system_info_extendedmodelname'
