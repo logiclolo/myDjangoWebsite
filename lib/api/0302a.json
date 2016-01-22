@@ -158,6 +158,14 @@
 												"check": null
 											}
 										]
+									},
+									{
+										"method": "remove",
+										"element": [
+											{
+												"param": "capability_image_c<n>_is_strength&capability_image_c<n>_is_supportlevel&capability_image_c<n>_is_affect&image_c<n>_dis&image_c<n>_profile_i<TOTALPROFILENUM>_dis&image_c<n>_eis&image_c<n>_profile_i<TOTALPROFILENUM>_eis&image_c<n>_ois&image_c<n>_profile_i<TOTALPROFILENUM>_ois"
+											}
+										]
 									}
 								]
 							},
@@ -170,6 +178,36 @@
 											{
 												"param": "capability_image_c<n>_is_mode",
 												"value": "-"
+											}
+										]
+									},
+									{
+										"method": "modify",
+										"element": [
+											{
+												"param": "capability_image_c<n>_eis",
+												"value": "0"
+											}
+										]
+									},
+									{
+										"method": "remove",
+										"element": [
+											{
+												"param": "capability_image_c<n>_is_strength&capability_image_c<n>_is_supportlevel&capability_image_c<n>_is_affect"
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_image_c0.xml",
+								"content": [
+									{
+										"method": "remove",
+										"element": [
+											{
+												"param": "image_c<n>_dis&image_c<n>_profile_i<TOTALPROFILENUM>_dis&image_c<n>_eis&image_c<n>_profile_i<TOTALPROFILENUM>_eis&image_c<n>_ois&image_c<n>_profile_i<TOTALPROFILENUM>_ois"
 											}
 										]
 									}
@@ -193,14 +231,14 @@
 						"id": 3
 					},
 					{
-						"cond": "CAMERA_MODEL=SD",
+						"cond": "CAMERA_TYPE=PTZ",
 						"ask": "support Image freeze spec or not? (1)Yes (2)No",
 						"id": 4
 					}
 				],
 				"task": [
 					{
-						"cond": "qid[2].val=4",
+						"cond": true,
 						"action": [
 							{
 								"file": "CDF.xml",
@@ -211,6 +249,16 @@
 											{
 												"param": "capability_peripheral_c<n>_waterspray_support&capability_peripheral_c<n>_wiper_support&capability_image_c<n>_freeze",
 												"check": null
+											},
+											{
+												"cond": "capability_thermal_support=1",
+												"param": "capability_thermal_controlmode",
+												"check": null
+											},
+											{
+												"cond": "qid[4].val=1",
+												"param": "image_c<n>_freeze",
+												"check": "\"%d\", \"0~1\""
 											}
 										]
 									}
@@ -225,6 +273,21 @@
 											{
 												"param": "capability_peripheral_c<n>_waterspray_support&capability_peripheral_c<n>_wiper_support",
 												"value": 0
+											},
+											{
+												"cond": "qid[2].val=3",
+												"param": "capability_peripheral_c<n>_waterspray_support&capability_peripheral_c<n>_wiper_support",
+												"value": 1
+											},
+											{
+												"cond": "qid[2].val=2",
+												"param": "capability_peripheral_c<n>_waterspray_support",
+												"value": 1
+											},
+											{
+												"cond": "qid[2].val=1",
+												"param": "capability_peripheral_c<n>_wiper_support",
+												"value": 1
 											}
 										]
 									}
@@ -250,25 +313,6 @@
 						"cond": "capability_thermal_support=1",
 						"action": [
 							{
-								"file": "CDF.xml",
-								"content": [
-									{
-										"method": "add",
-										"element": [
-											{
-												"param": "capability_thermal_controlmode",
-												"check": null
-											},
-											{
-												"cond": "qid[4].val=1",
-												"param": "image_c<n>_freeze",
-												"check": "\"%d\", \"0~1\""
-											}
-										]
-									}
-								]
-							},
-							{
 								"file": "config_capability.xml",
 								"content": [
 									{
@@ -287,7 +331,12 @@
 										]
 									}
 								]
-							},
+							}
+						]
+					},
+					{
+						"cond": "qid[4].val=1",
+						"action": [
 							{
 								"file": "config_imagefeature.xml",
 								"content": [
@@ -295,7 +344,6 @@
 										"method": "add",
 										"element": [
 											{
-												"cond": "qid[4].val=1",
 												"param": "capability_image_c<n>_freeze",
 												"value": 1
 											}
@@ -310,9 +358,26 @@
 										"method": "add",
 										"element": [
 											{
-												"cond": "qid[4].val=1",
 												"param": "image_c<n>_freeze",
 												"value": "?1"
+											}
+										]
+									}
+								]
+							}
+						]
+					},
+					{
+						"cond": "qid[4].val=2",
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "remove",
+										"element": [
+											{
+												"param": "image_c<n>_freeze"
 											}
 										]
 									}
@@ -398,6 +463,11 @@
 												"cond": "qid[5].val=1",
 												"param": "ircutcontrol_sensitivity",
 												"check": "\"%d\",\"1~100\""
+											},
+											{
+												"cond": "qid[5].val=2",
+												"param": "ircutcontrol_sensitivity",
+												"check": "\"%e\",\"low,normal,high\""
 											}
 										]
 									}
@@ -443,10 +513,46 @@
 												"cond": "qid[5].val=1",
 												"param": "ircutcontrol_sensitivity",
 												"value": "?51"
+											},
+											{
+												"cond": "qid[5].val=2",
+												"param": "ircutcontrol_sensitivity",
+												"value": "normal"
 											}
 										]
 									}
 								]
+							}
+						]
+					},
+					{
+						"cond": "capability_daynight_c<n>_support=0",
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "remove",
+										"element": [
+											{
+												"param": "capability_daynight_c<n>_ircutsensitivity_type&capability_daynight_c<n>_ircutsensitivity_supportlevel"
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_daynightfeature.xml",
+								"content": [
+									{
+										"method": "remove",
+										"element": [
+											{
+												"param": "capability_daynight_c<n>_ircutsensitivity_type&capability_daynight_c<n>_ircutsensitivity_supportlevel"
+											}
+										]
+									}
+								]	
 							}
 						]
 					}
@@ -532,6 +638,15 @@
 												"check": null
 											}
 										]
+									},
+									{
+										"method": "remove",
+										"element": [
+											{
+												"cond": "qid[7].val=1",
+												"param": "capability_image_c<n>_smartsensor"
+											}
+										]
 									}
 								]
 							},
@@ -557,6 +672,15 @@
 												"value": "?F14,F11,F9.6,F8.0,F6.8,F5.6,F4.8,F4.0,F3.4,F2.8,F2.4,F2.0,F1.6"
 											}
 										]
+									},
+									{
+										"method": "remove",
+										"element": [
+											{
+												"cond": "qid[7].val=1",
+												"param": "capability_image_c<n>_smartsensor"
+											}
+										]
 									}
 								]
 							}
@@ -575,7 +699,7 @@
 				],
 				"task": [
 					{
-						"cond": "qid[8].val=1",
+						"cond": true,
 						"action": [
 							{
 								"file": "CDF.xml",
@@ -584,8 +708,14 @@
 										"method": "modify",
 										"element": [
 											{
+												"cond": "qid[8].val=1",
 												"param": "videoin_c<n>_whitebalance",
 												"check": "?\"%e\",\"auto,widerange,outdoor,indoor,sodiumauto,manual,rbgain\""
+											},
+											{
+												"cond": "qid[8].val=2",
+												"param": "videoin_c<n>_whitebalance",
+												"check": "\"%e\",\"auto,manual,rbgain\""
 											}
 										]
 									}
@@ -598,8 +728,14 @@
 										"method": "modify",
 										"element": [
 											{
+												"cond": "qid[8].val=1",
 												"param": "capability_image_c<n>_wbmode",
 												"value": "?auto,widerange,outdoor,indoor,sodiumauto,manual,rbgain"
+											},
+											{
+												"cond": "qid[8].val=2",
+												"param": "capability_image_c<n>_wbmode",
+												"value": "auto,manual,rbgain"
 											}
 										]
 									}
@@ -631,9 +767,14 @@
 												"check": null
 											},
 											{
-												"cond": "qid[7].val=1",
+												"cond": "qid[7].val=1 && IRIS_TYPE!=Fixediris",
 												"param": "videoin_c<n>_exposuremode&videoin_c<n>_profile_i<TOTALPROFILENUM>_exposuremode",
 												"check": "\"%e\",\"auto,manual\""
+											},
+											{
+												"cond": "qid[7].val=1 && IRIS_TYPE=Fixediris",
+												"param": "videoin_c<n>_exposuremode&videoin_c<n>_profile_i<TOTALPROFILENUM>_exposuremode",
+												"check": "\"%e\",\"manual\""
 											},
 											{
 												"cond": "qid[7].val=2",
@@ -649,12 +790,26 @@
 												"cond": "qid[7].val=2",
 												"param": "videoin_c<n>_gainvalue&videoin_c<n>_profile_i<TOTALPROFILENUM>_gainvalue",
 												"check": "?\"%d\",\"0~100\""
+											},
+											{
+												"cond": "qid[7].val=1",
+												"param": "videoin_c<n>_maxexposure&videoin_c<n>_profile_i<TOTALPROFILENUM>_maxexposure&videoin_c<n>_minexposure&videoin_c<n>_profile_i<TOTALPROFILENUM>_minexposure",
+												"check": "?\"%d\",\"5~32000\""
+											},
+											{
+												"cond": "qid[7].val=1",
+												"param": "videoin_c<n>_maxgain&videoin_c<n>_profile_i<TOTALPROFILENUM>_maxgain&videoin_c<n>_mingain&videoin_c<n>_profile_i<TOTALPROFILENUM>_mingain",
+												"check": "?\"%d\",\"0~100\""
 											}
 										]
 									},
 									{
 										"method": "remove",
 										"element": [
+											{
+												"cond": "qid[7].val=1",
+												"param": "videoin_c<n>_shuttervalue&videoin_c<n>_profile_i<TOTALPROFILENUM>_shuttervalue&videoin_c<n>_gainvalue&videoin_c<n>_profile_i<TOTALPROFILENUM>_gainvalue&capability_image_c<n>_exposure_shuttervaluetype&capability_image_c<n>_exposure_gainvaluetype&capability_image_c<n>_exposure_shutterprioritymode_affect&capability_image_c<n>_exposure_irisprioritymode_affect"
+											},
 											{
 												"cond": "qid[7].val=2",
 												"param": "videoin_c<n>_maxexposure&videoin_c<n>_profile_i<TOTALPROFILENUM>_maxexposure&videoin_c<n>_minexposure&videoin_c<n>_profile_i<TOTALPROFILENUM>_minexposure&videoin_c<n>_maxgain&videoin_c<n>_profile_i<TOTALPROFILENUM>_maxgain&videoin_c<n>_mingain&videoin_c<n>_profile_i<TOTALPROFILENUM>_mingain"
@@ -670,9 +825,14 @@
 										"method": "add",
 										"element": [
 											{
-												"cond": "qid[7].val=1",
+												"cond": "qid[7].val=1 && IRIS_TYPE!=Fixediris",
 												"param": "capability_image_c<n>_exposure_modetype",
 												"value": "auto,manual"
+											},
+											{
+												"cond": "qid[7].val=1 && IRIS_TYPE=Fixediris",
+												"param": "capability_image_c<n>_exposure_modetype",
+												"value": "manual"
 											},
 											{
 												"cond": "qid[7].val=2",
@@ -710,19 +870,43 @@
 												"value": "?defaultgain:fixed:37"
 											},
 											{
-												"cond": "qid[7].val=2",
+												"cond": "qid[7].val=2 && ISSUPPORT_WDRPRO=true",
 												"param": "capability_image_c<n>_exposure_manualmode_affect",
 												"value": "?exposurewin.mode:hidden:,defog:disabled:,wdrpro:disabled:,exposurelevel:hidden:,icrmode.auto:notsupport:,defaultgain:fixed:0"
 											},
 											{
-												"cond": "qid[7].val=2",
+												"cond": "qid[7].val=2 && ISSUPPORT_WDRPRO=false",
+												"param": "capability_image_c<n>_exposure_manualmode_affect",
+												"value": "?exposurewin.mode:hidden:,defog:disabled:,exposurelevel:hidden:,icrmode.auto:notsupport:,defaultgain:fixed:0"
+											},
+											{
+												"cond": "qid[7].val=2 && ISSUPPORT_WDRPRO=true",
 												"param": "capability_image_c<n>_exposure_shutterprioritymode_affect",
 												"value": "?exposurewin.mode.blc:hidden:,defog:disabled:,wdrpro:disabled:,defaultgain:fixed:37"
 											},
 											{
-												"cond": "qid[7].val=2",
+												"cond": "qid[7].val=2 && ISSUPPORT_WDRPRO=false",
+												"param": "capability_image_c<n>_exposure_shutterprioritymode_affect",
+												"value": "?exposurewin.mode.blc:hidden:,defog:disabled:,defaultgain:fixed:37"
+											},
+											{
+												"cond": "qid[7].val=2 && ISSUPPORT_WDRPRO=true",
 												"param": "capability_image_c<n>_exposure_irisprioritymode_affect",
 												"value": "?exposurewin.mode.blc:hidden:,defog:disabled:,wdrpro:disabled:,defaultgain:fixed:37"
+											},
+											{
+												"cond": "qid[7].val=2 && ISSUPPORT_WDRPRO=false",
+												"param": "capability_image_c<n>_exposure_irisprioritymode_affect",
+												"value": "?exposurewin.mode.blc:hidden:,defog:disabled:,defaultgain:fixed:37"
+											}
+										]
+									},
+									{
+										"method": "remove",
+										"element": [
+											{
+												"cond": "qid[7].val=1",
+												"param": "capability_image_c<n>_exposure_shuttervaluetype&capability_image_c<n>_exposure_gainvaluetype&capability_image_c<n>_exposure_shutterprioritymode_affect&capability_image_c<n>_exposure_irisprioritymode_affect"
 											}
 										]
 									}
@@ -735,8 +919,14 @@
 										"method": "add",
 										"element": [
 											{
+												"cond": "IRIS_TYPE!=Fixediris",
 												"param": "videoin_c<n>_exposuremode&videoin_c<n>_profile_i<TOTALPROFILENUM>_exposuremode",
 												"value": "auto"
+											},
+											{
+												"cond": "IRIS_TYPE=Fixediris",
+												"param": "videoin_c<n>_exposuremode&videoin_c<n>_profile_i<TOTALPROFILENUM>_exposuremode",
+												"value": "manual"
 											},
 											{
 												"cond": "qid[7].val=2",
@@ -747,12 +937,36 @@
 												"cond": "qid[7].val=2",
 												"param": "videoin_c<n>_gainvalue&videoin_c<n>_profile_i<TOTALPROFILENUM>_gainvalue",
 												"value": "?37"
+											},
+											{
+												"cond": "qid[7].val=1",
+												"param": "videoin_c<n>_maxexposure&videoin_c<n>_profile_i<TOTALPROFILENUM>_maxexposure",
+												"value": "?30"
+											},
+											{
+												"cond": "qid[7].val=1",
+												"param": "videoin_c<n>_minexposure&videoin_c<n>_profile_i<TOTALPROFILENUM>_minexposure",
+												"value": "?32000"
+											},
+											{
+												"cond": "qid[7].val=1",
+												"param": "videoin_c<n>_maxgain&videoin_c<n>_profile_i<TOTALPROFILENUM>_maxgain",
+												"value": "?100"
+											},
+											{
+												"cond": "qid[7].val=1",
+												"param": "videoin_c<n>_mingain&videoin_c<n>_profile_i<TOTALPROFILENUM>_mingain",
+												"value": "?0"
 											}
 										]
 									},
 									{
 										"method": "remove",
 										"element": [
+											{
+												"cond": "qid[7].val=1",
+												"param": "videoin_c<n>_shuttervalue&videoin_c<n>_profile_i<TOTALPROFILENUM>_shuttervalue&videoin_c<n>_gainvalue&videoin_c<n>_profile_i<TOTALPROFILENUM>_gainvalue"
+											},
 											{
 												"cond": "qid[7].val=2",
 												"param": "videoin_c<n>_maxexposure&videoin_c<n>_profile_i<TOTALPROFILENUM>_maxexposure&videoin_c<n>_minexposure&videoin_c<n>_profile_i<TOTALPROFILENUM>_minexposure&videoin_c<n>_maxgain&videoin_c<n>_profile_i<TOTALPROFILENUM>_maxgain&videoin_c<n>_mingain&videoin_c<n>_profile_i<TOTALPROFILENUM>_mingain"
@@ -769,7 +983,7 @@
 				"type": "Piris spec in smart sensor",
 				"task": [
 					{
-						"cond": "capability_image_c<n>_iristype=piris && qid[7].val=2",
+						"cond": "IRIS_TYPE=Piris",
 						"action": [
 							{
 								"file": "CDF.xml",
@@ -778,6 +992,12 @@
 										"method": "modify",
 										"element": [
 											{
+												"cond": "qid[7].val=1",
+												"param": "videoin_c<n>_piris_mode&videoin_c<n>_profile_i<TOTALPROFILENUM>_piris_mode",
+												"check": "\"%e\",\"manual,indoor,outdoor\""
+											},
+											{
+												"cond": "qid[7].val=2",
 												"param": "videoin_c<n>_piris_mode&videoin_c<n>_profile_i<TOTALPROFILENUM>_piris_mode",
 												"check": "\"%e\",\"-\""
 											}
@@ -792,6 +1012,12 @@
 										"method": "modify",
 										"element": [
 											{
+												"cond": "qid[7].val=1",
+												"param": "videoin_c<n>_piris_mode&videoin_c<n>_profile_i<TOTALPROFILENUM>_piris_mode",
+												"value": "indoor"
+											},
+											{
+												"cond": "qid[7].val=2",
 												"param": "videoin_c<n>_piris_mode&videoin_c<n>_profile_i<TOTALPROFILENUM>_piris_mode",
 												"value": "-"
 											}
