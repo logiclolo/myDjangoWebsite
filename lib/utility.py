@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#encoding: utf-8
 
 import sys, os
 import re 
@@ -6,7 +7,7 @@ import json
 import bcolors
 import subprocess
 import pprint
-from config import * 
+import config 
 
 
 def output(filename, content):
@@ -115,6 +116,54 @@ def locate_file(model, confile):
 		return p
 
 	return None 
+
+def record_xml_update_err(path, xpath, method):
+	config.g_update_err_list.append((path, xpath, method))
+
+def xml_update_err_show():
+
+	for u in config.g_update_list:
+		tmp_modify = []
+		tmp_remove = []
+		tmp_add = []
+
+		print 'Upgrading ... %s' % u
+
+		for err in config.g_update_err_list:
+			if u == err[0]:
+				xpaths = err[1].split('&')
+				for xpath in xpaths:
+					method = err[2]
+					if method == 'add':
+						tmp_add.append(xpath)
+					elif method == 'remove': 
+						tmp_remove.append(xpath)
+					elif method == 'modify': 
+						tmp_modify.append(xpath)
+
+		if len(tmp_modify) > 0:
+			print '\n\t(修改...)'
+			for tmp in tmp_modify:
+				print bcolors.BLUE + '\t\'%s\'' % tmp 
+			print '\t' + bcolors.NORMAL + '以上參數不存在'
+
+		if len(tmp_remove) > 0:
+			print '\n\t(刪除...)'
+			for tmp in tmp_remove:
+				print bcolors.BLUE + '\t\'%s\'' % tmp 
+			print '\t' + bcolors.NORMAL + u'以上參數本來就不存在'
+
+		if len(tmp_add) > 0:
+			print '\n\t(新增...)'
+			for tmp in tmp_add:
+				print bcolors.BLUE + '\t\'%s\'' % tmp 
+			print '\t' + bcolors.NORMAL + '以上參數已經存在'
+
+
+		print bcolors.NORMAL
+
+
+
 
 def is_xml_well_formed(path):
 	tmp = []

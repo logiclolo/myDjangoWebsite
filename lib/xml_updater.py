@@ -13,6 +13,7 @@ from copy import deepcopy
 from configer import *
 from check_cond import *
 from evaluator import *
+from utility import *
 
 if sys.version_info[:2] >= (2, 5):
 	import xml.etree.ElementTree as et
@@ -37,9 +38,6 @@ class Base(object):
 		self.param_exist_already = True
 
 		self.compose_detail_action()
-
-		if debug:
-			print json.dumps(self.elements, indent=4, sort_keys=True)
 
 	def compose_detail_action(self):
 
@@ -69,6 +67,9 @@ class Base(object):
 			if element.has_key('cond') and not check_cond(element['cond'], self.matrix):
 				continue
 
+			if debug:
+				print json.dumps(element, indent=4, sort_keys=True)
+
 			stain = stain | self.detail_action(et_object, element)
 
 		if stain:
@@ -86,7 +87,8 @@ class Add(Base):
 		if et_new_node != None or self.param_exist_already:
 			return True
 		else:
-			print '\t' + bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' exists already !'
+			record_xml_update_err(self.matrix['path'], element['param'], 'add')
+			#print '\t' + bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' exists already !'
 			return False
 
 	def insert_new_xpath(self, et_object, element):
@@ -188,7 +190,8 @@ class Remove(Base):
 		if ret:
 			return True
 		else:
-			print '\t' + bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' does not exist !'
+			record_xml_update_err(self.matrix['path'], element['param'], 'remove')
+			#print '\t' + bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' does not exist !'
 			return False
 
 	def remove_xpath(self, et_object, element):
@@ -226,7 +229,8 @@ class Modify(Base):
 				stain = True
 
 		if not stain:
-			print '\t' + bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' does not exist !'
+			record_xml_update_err(self.matrix['path'], element['param'], 'modify')
+			#print '\t' + bcolors.WARNING + '\'%s\'' % element['param'] + bcolors.NORMAL + ' does not exist !'
 
 		return stain
 
