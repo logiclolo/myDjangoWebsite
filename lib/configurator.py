@@ -12,16 +12,38 @@ from action_dispatcher import *
 import config
 
 def action_dispatch(matrix):
+	print '\nhandling ...'
 	for action in matrix['action']:
 		Dispatcher(action, matrix)
 
-def update_config(matrix):
+def update_config(obj):
+	matrix = obj.matrix
+
 	for m in matrix:
-		configer = Configer(m['model'])
+		apis = m['update']
+		model = m['model']
+
+		print bcolors.PURPLE
+		print '############################'
+		print 'Handle %s ...' % model
+		print '############################' + bcolors.NORMAL
+
+		configer = Configer(model)
 		m['configer'] = configer
 
-		print bcolors.BLUE + 'handle %s ...' % m['model'] + bcolors.NORMAL
-		action_dispatch(m)
+		for api in apis:
+			obj.parse_api_rule(api, model)
+			action_dispatch(m)
+
+			if config.g_format:	
+				print 'Formating ...'
+				pp = pprint.PrettyPrinter()
+				pp.pprint(config.g_format_list)
+			else:
+				xml_update_err_show()	
+
+		if len(apis) == 0:
+			print 'api is up to date'
 
 		configer.stop()
 
@@ -42,7 +64,7 @@ def usage():
 if __name__ == '__main__':
 	
 	version = ''
-	opts, args = getopt.getopt(sys.argv[1:], "ha:f:" )
+	opts, args = getopt.getopt(sys.argv[1:], "hsa:f:" )
 
 	#print opts
 	for opt, arg in opts:
@@ -51,6 +73,9 @@ if __name__ == '__main__':
 		if opt in ('-f', ''):
 			config.g_format = True
 			version = arg 
+		if opt in ('-s', ''):
+			show_all_api()
+			sys.exit(0)
 		if opt in ('-h', ''):
 			usage()
 			sys.exit(0)
@@ -71,15 +96,24 @@ if __name__ == '__main__':
 	if not os.path.isfile(path):
 		print 'No %s.json found' % version
 		sys.exit(0)
+	
+	models = choose_model('model-list')
 
-	model = choose_model('model-list')
+	obj = RuleParser(path, models)
+	obj.parse_common_rule()
 
-	obj = RuleParser(path, model)
 
-
-	# Check whether the file is formatted or not
+	# We still need to check the format of configs
+	# even if user does not specify format
 	if not config.g_format:
-		tmp = obj.check_file_well_formed()
+		tmp = []
+
+		for matrix in obj.matrix:
+			apis = matrix['update']
+			model = matrix['model']
+
+			for api in apis:
+				tmp = list(set(tmp + obj.check_file_well_formed(api, model)))
 
 		if len(tmp) > 0:
 			print bcolors.WARNING
@@ -87,8 +121,8 @@ if __name__ == '__main__':
 			pp = pprint.PrettyPrinter()
 			pp.pprint(tmp)
 			print '------------------------------------------------------------------------------------------------------------'
-			print 'Strongly recommend you to format it first with executing \"configurator -a xxx -f\" and commit the change'
-			print 'if not, the xml after update would contain the unnecessary format change information which bothers you'
+			print 'Strongly suggest you to format it first with executing \"configurator -f api_version\" and commit the change'
+			print 'if not, the xml after upgrade would contain the unnecessary format changing information which bothers you'
 			print '------------------------------------------------------------------------------------------------------------'
 			print 'Press any key to continue or \'q\' to exit ...'
 
@@ -96,17 +130,7 @@ if __name__ == '__main__':
 			if ans == 'q':
 				sys.exit(0)
 
-	print '####################################################'
-	print 'Parsing rule.json ...'
-	print '####################################################'
-	obj.parse_common_rule()
 
-	print '####################################################'
-	print 'Parsing %s.json ...' % version
-	print '####################################################'
-	obj.parse_api_rule()
-
-	update_config(obj.matrix)
-
+	update_config(obj)
 
 # vim: tabstop=8 shiftwidth=8 softtabstop=8 noexpandtab

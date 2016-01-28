@@ -22,16 +22,17 @@ else:
 	import elementtree.ElementTree as et
 
 class RuleParser(object):
-	version = ''
-	api_rule = ''
+	latest_api = ''
 	common_rule = ''
 	actions = []
 	config_path = []
 	matrix = []
+	update_api_list = []
 
 	def __init__(self, path, models):
-		self.api_rule = path
-		self.common_rule = './api/rule.json'
+		self.latest_api = path
+		dirname = os.path.dirname(path)
+		self.common_rule = os.path.join(dirname, 'rule.json')
 		self.models = models
 
 		self.initial_matrix()
@@ -98,12 +99,16 @@ class RuleParser(object):
 		#
 		# (4) answer list
 		# The replies answerd by the user
+		# 
+		# (5) update list
+		# The list of all the api for upgrade 
 
 		tmp = {}
 		for model in self.models:
 			tmp['model'] = model
 			tmp['action'] = []
 			tmp['content'] = []
+			tmp['update'] = []
 			tmp['answer'] = {}
 			self.matrix.append(deepcopy(tmp))
 
@@ -126,15 +131,14 @@ class RuleParser(object):
 				tmp[key] = value
 		return deepcopy(tmp)
 
-	def check_file_well_formed(self):
-		data = open(self.api_rule).read()
+	def check_file_well_formed(self, api_path, model):
+		data = open(api_path).read()
 		jdata = json.loads(data)
 
 		if not jdata.has_key('version') and not jdata.has_key('content'):
 			error_msg()
 
-		self.version = jdata['version']
-		content = jdata['content']
+		version = jdata['version']
 		specs = jdata['content']['spec']
 
 		confiles = []
@@ -148,11 +152,10 @@ class RuleParser(object):
 						confiles.append(config)
 
 		confile_path = []
-		for model in self.models:
-			for confile in confiles:
-				tmp = locate_file(model, confile)
-				if tmp not in confile_path:
-					confile_path.append(tmp)
+		for confile in confiles:
+			tmp = locate_file(model, confile)
+			if tmp not in confile_path:
+				confile_path.append(tmp)
 
 		ret = []
 		for path in confile_path:
@@ -179,31 +182,40 @@ class RuleParser(object):
 
 			configer.stop()
 
+			# all the APIs need to update
+			m['update'] = choose_api(self.latest_api, m['model'])
+
 
 		if debug:
 			print json.dumps(self.matrix, indent=4, sort_keys=True, default=jason_default)
 			print '\n\n'
 
-	def parse_api_rule(self):
-		data = open(self.api_rule).read()
+	def parse_api_rule(self, api_path, model):
+		data = open(api_path).read()
 		jdata = json.loads(data)
 
 		if not jdata.has_key('version') and not jdata.has_key('content'):
 			error_msg()
 
-		self.version = jdata['version']
-		content = jdata['content']
+		version = jdata['version']
 		specs = jdata['content']['spec']
 
-		# compose the self.matrix
+		print '----------------------------'
+		print '%s' % version
+		print '----------------------------'
+
+		# compose the model matrix 
 		# which contains all the information we need
-		for m in self.matrix:
-			configer = Configer(m['model'])
-			m['configer'] = configer
+		for matrix in self.matrix:
+			if model == matrix['model']:
+				break
 
-			self.parse_detail_api_rule(m, specs)
+		configer = Configer(model)
+		matrix['configer'] = configer
 
-			configer.stop()
+		self.parse_detail_api_rule(matrix, specs)
+
+		configer.stop()
 
 		if debug:
 			print json.dumps(self.matrix, indent=4, sort_keys=True, default=jason_default)

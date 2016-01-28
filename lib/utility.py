@@ -8,6 +8,8 @@ import bcolors
 import subprocess
 import pprint
 import config 
+from copy import deepcopy
+from configer import *
 
 
 def output(filename, content):
@@ -22,8 +24,8 @@ def available_model():
 	tmp = []
 	capability = 'config_capability.xml'
 
-	flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
-	dirs = subprocess.Popen('find %s -iname %s' % (flash_base, capability), shell=True, stdout = subprocess.PIPE).stdout
+	flashfs_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
+	dirs = subprocess.Popen('find %s -iname %s' % (flashfs_base, capability), shell=True, stdout = subprocess.PIPE).stdout
 	for d in dirs: 	
 		d = re.sub('\n', '', d)
 		m = re.search('.*/([A-Z][A-Z][0-9A-Z]+)/.*', d)
@@ -63,7 +65,7 @@ def choose_model(model_file):
 
 		output(model_file, tmp)
 
-		print bcolors.WARNING + '\'%s\' file does not exist' % model_file + bcolors.NORMAL
+		#print bcolors.WARNING + '\'%s\' file does not exist' % model_file + bcolors.NORMAL
 		print 'Configurator will update the model CDF/configs according to \'%s\'' % model_file
 		print 'We generate the \'%s\' for you and ready to update the model:' % model_file
 		print model
@@ -73,8 +75,7 @@ def choose_model(model_file):
 		print 'No models. Please modify \'%s\'' % model_file	
 		sys.exit(0)
 
-	print bcolors.WARNING
-	print 'Modify \'%s\' if you want to change models' % model_file + bcolors.NORMAL
+	print bcolors.WARNING + 'Modify \'%s\' if you want to change models' % model_file + bcolors.NORMAL
 	print 'Press any key to continue or \'q\' to exit ...'
 
 	ans = getch()
@@ -83,12 +84,74 @@ def choose_model(model_file):
 
 	return model
 
+def find_current_api(model):
+
+	configer = Configer(model)
+	value = configer.fetch_value('capability_api_httpversion')
+	configer.stop()
+
+	if value != None:
+		value = value.split('_')[0]
+		value = value + '.json'
+
+	return value 
+	
+
+def choose_api(api, model):
+
+	basename = os.path.basename(api)
+	dirname = os.path.dirname(api)
+
+	totals = os.listdir(dirname)
+	totals.sort()
+
+	current = find_current_api(model)
+
+	try:
+		index1 = totals.index(current)
+		index2 = totals.index(basename)
+		totals = totals[(index1 + 1):(index2 + 1)]
+
+	except ValueError:
+		# current api is not found in database
+		# update latest api only
+		index2 = totals.index(basename)
+		totals = totals[index2:(index2 + 1)]
+
+	print '\n%s' % model 
+	print 'current api is:'
+	print current.split('.')[0]
+	if len(totals) != 0:
+		print 'we will update the following api:'
+		for api in totals:
+			print api.split('.')[0]
+	else:
+		print 'No need to update api'
+
+	# return api with path
+	tmp = []
+	for t in totals:
+		tmp.append(os.path.join(dirname, t))
+
+	return tmp 
+
+def show_all_api():
+
+	totals = os.listdir('api')
+	totals.sort()
+
+	# no need to show rule.json
+	totals = totals[:-1]
+
+	print totals
+
+
 def strip_model(model):
 	tmp = []
 
-	flash_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
+	flashfs_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
 	for m in model:
-		path = os.path.join(flash_base, m)
+		path = os.path.join(flashfs_base, m)
 		if os.path.isdir(path):
 			tmp.append(m)
 		else:
@@ -100,7 +163,8 @@ def strip_model(model):
 def locate_file(model, confile):
 
 	# search in 'flashfs_base' first
-	base = os.path.join(g_flashfs_base, model)  
+	flashfs_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
+	base = os.path.join(flashfs_base, model)  
 	cmd = 'find %s -iname %s' % (base, confile)
 	path = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE).stdout
 	for p in path: 	
@@ -108,7 +172,7 @@ def locate_file(model, confile):
 		return p
 
 	# and then search in 'common'
-	base = os.path.join(g_flashfs_base, 'common')
+	base = os.path.join(flashfs_base, 'common')
 	cmd = 'find %s -iname %s' % (base, confile)
 	path = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE).stdout
 	for p in path: 	
@@ -171,6 +235,7 @@ def is_xml_well_formed(path):
 
 	fh = open(path, 'r')
 	line = fh.readline()
+	line_count = 1 
 
 	while line:
 		# <root>...</root>
@@ -190,23 +255,29 @@ def is_xml_well_formed(path):
 		# <root/>
 		m7 = re.match('\t*\s*<.*/>$', line)
 
+		# /t<root>
+		m8 = re.match('\t+<.*>$', line)
 
-		if m1 or m2 or m3 or m4:
-			pass
-		elif m5:
+
+		if m5:
 			cflag = 'start'
 		elif m6:
 			cflag = 'end'
 		elif m7:
-			if path == 'CDF.xml':
+			if os.path.basename(path) == 'CDF.xml':
 				pass
 			else:
 				tmp.append(repr(line))
+		elif line_count == 1 and m8:
+			tmp.append(repr(line))
+		elif m1 or m2 or m3 or m4:
+			pass
 		else:
 			if cflag == 'end':
 				tmp.append(repr(line))
 
 		line = fh.readline()
+		line_count = line_count + 1
 
 	if len(tmp) > 0:
 		#pp = pprint.PrettyPrinter(indent=4)

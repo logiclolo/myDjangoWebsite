@@ -42,14 +42,14 @@ class Dispatcher(object):
 		else:
 			return None 
 
-		#  'modify xml tree' or 'just format'
+		# format or modify
 		if config.g_format:
-			if not path in config.g_format_list: 
+			if path not in config.g_format_list: 
 				config.g_format_list.append(path)
-				print 'formatting ... %s' % path
 				XmlWriter(self.et_root, self.matrix)
 		else:
-			print 'Modifying ... %s' % path
+			if path not in config.g_update_list:
+				config.g_update_list.append(path)
 			self.dispatch()
 
 	def read_xml_declaration(self, path):
@@ -80,7 +80,6 @@ class Dispatcher(object):
 		return obj.action()
 
 	def dispatch(self):
-		ret = False 
 		contents = self.contents
 
 		for content in contents:
@@ -91,9 +90,11 @@ class Dispatcher(object):
 				ret = self.apply_xml_updater(Modify, content)
 			elif md == 'remove':
 				ret = self.apply_xml_updater(Remove, content)
+			else:
+				ret = False
 
-		if ret:
-			XmlWriter(self.et_root, self.matrix)
+			if ret:
+				XmlWriter(self.et_root, self.matrix)
 
 
 class XmlWriter(object):

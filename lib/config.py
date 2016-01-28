@@ -2,4 +2,5 @@ import os
 
 g_format = False	
 g_format_list = []
-g_flashfs_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')
+g_update_list = []
+g_update_err_list = [] 
