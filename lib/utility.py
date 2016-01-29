@@ -86,11 +86,10 @@ def choose_model(model_file):
 
 	return model
 
-def find_current_api(model):
+def find_current_api(matrix):
 
-	configer = Configer(model)
+	configer = matrix['configer']
 	value = configer.fetch_value('capability_api_httpversion')
-	configer.stop()
 
 	if value != None:
 		value = value.split('_')[0]
@@ -99,7 +98,7 @@ def find_current_api(model):
 	return value 
 	
 
-def choose_api(api, model):
+def choose_api(api, matrix):
 
 	basename = os.path.basename(api)
 	dirname = os.path.dirname(api)
@@ -107,7 +106,7 @@ def choose_api(api, model):
 	totals = os.listdir(dirname)
 	totals.sort()
 
-	current = find_current_api(model)
+	current = find_current_api(matrix)
 
 	try:
 		index1 = totals.index(current)
@@ -120,17 +119,15 @@ def choose_api(api, model):
 		index2 = totals.index(basename)
 		totals = totals[index2:(index2 + 1)]
 
-	print bcolors.GOOD + '\n%s' % model + bcolors.NORMAL
-	print 'Current API:'
-	print [current.split('.')[0]]
+	print bcolors.GOOD + '\n%s' % matrix['model'] + bcolors.NORMAL
+	print 'current api   :' + str([current.split('.')[0]])
 	tmp = []
 	if len(totals) != 0:
-		print 'API to upgrade:'
 		for api in totals:
 			tmp.append(api.split('.')[0])
-		print tmp
+		print 'api to upgrade:' + str(tmp)
 	else:
-		print 'API is update to date'
+		print 'api to upgrade: None' 
 
 	# return api with path
 	tmp = []
@@ -243,11 +240,11 @@ def is_xml_well_formed(path):
 
 	while line:
 		# <root>...</root>
-		m1 = re.match('\t*\s*<.*>.*</.*>$', line)
+		m1 = re.match('\t*\s*<[^/]+>[^<>]*</.+>$', line)
 		# <root>
-		m2 = re.match('\t*\s*<.*>$', line)
+		m2 = re.match('\t*\s*<[^/]+>$', line)
 		# </root>
-		m3 = re.match('\t*\s*</.*>$', line)
+		m3 = re.match('\t*\s*</.+>$', line)
 
 		# <!-- ... -->
 		m4 = re.match('\t*\s*<!--.*-->', line)
@@ -257,10 +254,10 @@ def is_xml_well_formed(path):
 		m6 = re.match('\t*\s*-->', line)
 
 		# <root/>
-		m7 = re.match('\t*\s*<.*/>$', line)
+		m7 = re.match('\t*\s*<.+/>$', line)
 
 		# /t<root>
-		m8 = re.match('\t+<.*>$', line)
+		m8 = re.match('\t+<[^/]+>$', line)
 
 
 		if m5:

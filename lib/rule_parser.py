@@ -189,11 +189,10 @@ class RuleParser(object):
 			for content in jdata['content']:
 				self.handle_detail_common_rule(m, content)
 
-			configer.stop()
-
 			# all the APIs need to update
-			m['update'] = choose_api(self.latest_api, m['model'])
+			m['update'] = choose_api(self.latest_api, m)
 
+			configer.stop()
 
 		if debug:
 			print json.dumps(self.matrix, indent=4, sort_keys=True, default=jason_default)
@@ -220,14 +219,9 @@ class RuleParser(object):
 			if model == matrix['model']:
 				break
 
-		configer = Configer(model)
-		matrix['configer'] = configer
-
 		# compose the model matrix 
 		# which contains all the information we need
 		self.parse_detail_api_rule(matrix, specs)
-
-		configer.stop()
 
 		if debug:
 			print json.dumps(matrix, indent=4, sort_keys=True, default=jason_default)
