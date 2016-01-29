@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#encoding: utf-8
 
 import sys, os
 import json
@@ -23,7 +24,7 @@ def update_config(obj):
 		apis = m['update']
 		model = m['model']
 
-		print bcolors.PURPLE
+		print bcolors.GOOD
 		print '############################'
 		print 'Handle %s ...' % model
 		print '############################' + bcolors.NORMAL
@@ -56,7 +57,8 @@ def check_envs():
 def usage():
 	usage = 'Usage: %s [-a version] [-f version]\
 		\n\t-a\tSpecify a http_api_version to update\
-		\n\t-f\tSpecify a http_api_version to format'\
+		\n\t-f\tSpecify a http_api_version to format\
+		\n\t-l\tList all http_api_version'\
 		% sys.argv[0]   
 
 	print usage
@@ -64,7 +66,7 @@ def usage():
 if __name__ == '__main__':
 	
 	version = ''
-	opts, args = getopt.getopt(sys.argv[1:], "hsa:f:" )
+	opts, args = getopt.getopt(sys.argv[1:], "hla:f:" )
 
 	#print opts
 	for opt, arg in opts:
@@ -73,7 +75,7 @@ if __name__ == '__main__':
 		if opt in ('-f', ''):
 			config.g_format = True
 			version = arg 
-		if opt in ('-s', ''):
+		if opt in ('-l', ''):
 			show_all_api()
 			sys.exit(0)
 		if opt in ('-h', ''):
@@ -121,8 +123,11 @@ if __name__ == '__main__':
 			pp = pprint.PrettyPrinter()
 			pp.pprint(tmp)
 			print '------------------------------------------------------------------------------------------------------------'
-			print 'Strongly suggest you to format it first with executing \"configurator -f api_version\" and commit the change'
-			print 'if not, the xml after upgrade would contain the unnecessary format changing information which bothers you'
+			print '強烈建議:'
+			print '(1)先執行格式化指令，即\"configurator -f api_version\"'
+			print '(2)commit 格式化後的結果'
+			print '執行完以上步驟後，再來更新設定檔，這樣比較容易看出更新變動\n'
+			print '如果不先格式化就繼續更新設定檔，變更內容會包含\"格式變動\"，容易造成比對上的困擾'
 			print '------------------------------------------------------------------------------------------------------------'
 			print 'Press any key to continue or \'q\' to exit ...'
 

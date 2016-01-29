@@ -112,6 +112,15 @@ class RuleParser(object):
 			tmp['answer'] = {}
 			self.matrix.append(deepcopy(tmp))
 
+	def clean_matrix(self):
+		for matrix in self.matrix:
+			matrix['action'] = []
+			matrix['answer'] = {} 
+
+		config.g_format_list = []
+		config.g_update_list = []
+		config.g_update_err_list = []
+
 	def handle_detail_common_rule(self, matrix, content):
 
 		rules = content['rule']
@@ -200,12 +209,13 @@ class RuleParser(object):
 		version = jdata['version']
 		specs = jdata['content']['spec']
 
-		print '----------------------------'
+		print bcolors.WARNING + '----------------------------'
 		print '%s' % version
-		print '----------------------------'
+		print '----------------------------' + bcolors.NORMAL
 
-		# compose the model matrix 
-		# which contains all the information we need
+		self.clean_matrix()
+
+		# find the matrix with specific model
 		for matrix in self.matrix:
 			if model == matrix['model']:
 				break
@@ -213,12 +223,14 @@ class RuleParser(object):
 		configer = Configer(model)
 		matrix['configer'] = configer
 
+		# compose the model matrix 
+		# which contains all the information we need
 		self.parse_detail_api_rule(matrix, specs)
 
 		configer.stop()
 
 		if debug:
-			print json.dumps(self.matrix, indent=4, sort_keys=True, default=jason_default)
+			print json.dumps(matrix, indent=4, sort_keys=True, default=jason_default)
 			print '\n\n'
 
 	def parse_detail_api_rule(self, matrix, specs):

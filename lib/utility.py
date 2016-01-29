@@ -49,8 +49,9 @@ def choose_model(model_file):
 
 			model = strip_model(tmp)
 
-			print 'We are ready to update the model:'
+			print bcolors.WARNING + 'We are ready to update the model:'
 			print model
+			print bcolors.NORMAL
 
 
 		except IOError, e:
@@ -67,15 +68,16 @@ def choose_model(model_file):
 
 		#print bcolors.WARNING + '\'%s\' file does not exist' % model_file + bcolors.NORMAL
 		print 'Configurator will update the model CDF/configs according to \'%s\'' % model_file
-		print 'We generate the \'%s\' for you and ready to update the model:' % model_file
+		print bcolors.WARNING + 'We generate the \'%s\' for you and ready to update the model:' % model_file
 		print model
+		print bcolors.NORMAL
 
 
 	if len(model) == 0:
 		print 'No models. Please modify \'%s\'' % model_file	
 		sys.exit(0)
 
-	print bcolors.WARNING + 'Modify \'%s\' if you want to change models' % model_file + bcolors.NORMAL
+	print 'Modify \'%s\' if you want to change models' % model_file
 	print 'Press any key to continue or \'q\' to exit ...'
 
 	ans = getch()
@@ -118,15 +120,17 @@ def choose_api(api, model):
 		index2 = totals.index(basename)
 		totals = totals[index2:(index2 + 1)]
 
-	print '\n%s' % model 
-	print 'current api is:'
-	print current.split('.')[0]
+	print bcolors.GOOD + '\n%s' % model + bcolors.NORMAL
+	print 'Current API:'
+	print [current.split('.')[0]]
+	tmp = []
 	if len(totals) != 0:
-		print 'we will update the following api:'
+		print 'API to upgrade:'
 		for api in totals:
-			print api.split('.')[0]
+			tmp.append(api.split('.')[0])
+		print tmp
 	else:
-		print 'No need to update api'
+		print 'API is update to date'
 
 	# return api with path
 	tmp = []
