@@ -5,6 +5,7 @@
 		"ISSUPPORT_H265":false,
 		"ISSUPPORT_SS1":false,
 		"ISSUPPORT_WDRPRO":false,
+		"ISSUPPORT_EPTZ":"capability_eptz",
 		"TOTALSTREAMNUM":"capability_nmediastream",
 		"TOTALPROFILENUM":"capability_nvideoinprofile",
 		"IRIS_TYPE":"Piris"

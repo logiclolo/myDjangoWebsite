@@ -51,9 +51,26 @@
 												"check": "\"%d\",\"0~1\""
 											},
 											{
-												"cond":"qid[1].val=3&image_c<n>_profile_i<TOTALPROFILENUM>_ois_strength",
-												"param": "image_c<n>_ois_strength",
+												"cond":"qid[1].val=3",
+												"param": "image_c<n>_ois_strength&image_c<n>_profile_i<TOTALPROFILENUM>_ois_strength",
 												"check": "\"%d\",\"1~100\""
+											}
+										]
+									},
+									{
+										"method": "remove",
+										"element": [
+											{
+												"cond":"qid[1].val=1",
+												"param": "image_c<n>_eis&image_c<n>_profile_i<TOTALPROFILENUM>_eis&image_c<n>_ois&image_c<n>_profile_i<TOTALPROFILENUM>_ois"
+											},
+											{
+												"cond":"qid[1].val=2",
+												"param": "image_c<n>_dis&image_c<n>_profile_i<TOTALPROFILENUM>_dis&image_c<n>_ois&image_c<n>_profile_i<TOTALPROFILENUM>_ois"
+											},
+											{
+												"cond":"qid[1].val=3",
+												"param": "image_c<n>_dis&image_c<n>_profile_i<TOTALPROFILENUM>_dis&image_c<n>_eis&image_c<n>_profile_i<TOTALPROFILENUM>_eis"
 											}
 										]
 									}
@@ -87,7 +104,12 @@
 											{
 												"param": "capability_image_c<n>_is_affect",
 												"value": "?-"
-											},
+											}
+										]
+									},
+									{
+										"method": "modify",
+										"element": [
 											{
 												"cond": "qid[1].val!=2",
 												"param": "capability_image_c<n>_eis",
@@ -137,6 +159,23 @@
 												"cond":"qid[1].val=3",
 												"param": "image_c<n>_ois_strength&image_c<n>_profile_i<TOTALPROFILENUM>_ois_strength",
 												"value": "?1"
+											}
+										]
+									},
+									{
+										"method": "remove",
+										"element": [
+											{
+												"cond":"qid[1].val=1",
+												"param": "image_c<n>_eis&image_c<n>_profile_i<TOTALPROFILENUM>_eis&image_c<n>_ois&image_c<n>_profile_i<TOTALPROFILENUM>_ois"
+											},
+											{
+												"cond":"qid[1].val=2",
+												"param": "image_c<n>_dis&image_c<n>_profile_i<TOTALPROFILENUM>_dis&image_c<n>_ois&image_c<n>_profile_i<TOTALPROFILENUM>_ois"
+											},
+											{
+												"cond":"qid[1].val=3",
+												"param": "image_c<n>_dis&image_c<n>_profile_i<TOTALPROFILENUM>_dis&image_c<n>_eis&image_c<n>_profile_i<TOTALPROFILENUM>_eis"
 											}
 										]
 									}
@@ -485,7 +524,7 @@
 												"value": "normalize"
 											},
 											{
-												"cond": "qid[5].val=0",
+												"cond": "qid[5].val=2",
 												"param": "capability_daynight_c<n>_ircutsensitivity_type",
 												"value": "options"
 											},
@@ -495,7 +534,7 @@
 												"value": "?3"
 											},
 											{
-												"cond": "qid[5].val=0",
+												"cond": "qid[5].val=2",
 												"param": "capability_daynight_c<n>_ircutsensitivity_supportlevel",
 												"value": 3
 											}
@@ -808,7 +847,7 @@
 										"element": [
 											{
 												"cond": "qid[7].val=1",
-												"param": "videoin_c<n>_shuttervalue&videoin_c<n>_profile_i<TOTALPROFILENUM>_shuttervalue&videoin_c<n>_gainvalue&videoin_c<n>_profile_i<TOTALPROFILENUM>_gainvalue&capability_image_c<n>_exposure_shuttervaluetype&capability_image_c<n>_exposure_gainvaluetype&capability_image_c<n>_exposure_shutterprioritymode_affect&capability_image_c<n>_exposure_irisprioritymode_affect"
+												"param": "videoin_c<n>_shuttervalue&videoin_c<n>_profile_i<TOTALPROFILENUM>_shuttervalue&videoin_c<n>_gainvalue&videoin_c<n>_profile_i<TOTALPROFILENUM>_gainvalue&capability_image_c<n>_exposure_shuttervaluetype&capability_image_c<n>_exposure_gainvaluetype&capability_image_c<n>_exposure_shutterprioritymode&capability_image_c<n>_exposure_irisprioritymode"
 											},
 											{
 												"cond": "qid[7].val=2",
@@ -906,7 +945,7 @@
 										"element": [
 											{
 												"cond": "qid[7].val=1",
-												"param": "capability_image_c<n>_exposure_shuttervaluetype&capability_image_c<n>_exposure_gainvaluetype&capability_image_c<n>_exposure_shutterprioritymode_affect&capability_image_c<n>_exposure_irisprioritymode_affect"
+												"param": "capability_image_c<n>_exposure_shuttervaluetype&capability_image_c<n>_exposure_gainvaluetype&capability_image_c<n>_exposure_shutterprioritymode&capability_image_c<n>_exposure_irisprioritymode"
 											}
 										]
 									}
@@ -1070,7 +1109,7 @@
 				"type": "Zoom ratio display",
 				"task": [
 					{
-						"cond": "capability_eptz!=0 && CAMERA_TYPE!=PTZ",
+						"cond": "ISSUPPORT_EPTZ || CAMERA_MODEL=FE",
 						"action": [
 							{
 								"file": "CDF.xml",

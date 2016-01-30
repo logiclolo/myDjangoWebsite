@@ -19,7 +19,15 @@
 				],
 				"task": [
 					{
-						"cond": "qid[1].val=1 && ISSUPPORT_SS1=true",
+						"cond": "qid[1].val=2 && ISSUPPORT_SS1=true",
+						"action": [
+							{
+								"ask": "Do not support smart stream 1.0 anymore!!! Please confirm the SPEC"
+							}
+						]
+					},
+					{
+						"cond": "qid[1].val=1",
 						"action": [
 							{
 								"file": "CDF.xml",
@@ -28,7 +36,7 @@
 										"method": "add",
 										"element": [
 											{
-												"param": "capability_smartstream_version",
+												"param": "capability_smartstream_version&capability_smartstream_support&capability_smartstream_nstream&capability_smartstream_mode_autotracking&capability_smartstream_mode_manual&capability_smartstream_mode_hybrid&capability_smartstream_nwindow_autotracking&capability_smartstream_nwindow_manual&capability_smartstream_nwindow_hybrid_autotracking&capability_smartstream_nwindow_hybrid_manual&capability_smartstream_windomain",
 												"check": null
 											},
 											{
@@ -164,6 +172,46 @@
 											{
 												"param": "capability_smartstream_version",
 												"value": "2.0"
+											},
+											{
+												"param": "capability_smartstream_support",
+												"value": "1"
+											},
+											{
+												"param": "capability_smartstream_nstream",
+												"value": "TOTALSTREAMNUM"
+											},
+											{
+												"param": "capability_smartstream_mode_autotracking",
+												"value": "1"
+											},
+											{
+												"param": "capability_smartstream_mode_manual",
+												"value": "?1"
+											},
+											{
+												"param": "capability_smartstream_mode_hybrid",
+												"value": "?1"
+											},
+											{
+												"param": "capability_smartstream_nwindow_autotracking",
+												"value": "?8"
+											},
+											{
+												"param": "capability_smartstream_nwindow_manual",
+												"value": "qid[2].val"
+											},
+											{
+												"param": "capability_smartstream_nwindow_hybrid_autotracking",
+												"value": "?5"
+											},
+											{
+												"param": "capability_smartstream_nwindow_hybrid_manual",
+												"value": "qid[2].val"
+											},
+											{
+												"param": "capability_smartstream_windomain",
+												"value": "qvga"
 											}
 										]
 									},
@@ -296,281 +344,33 @@
 						]
 					},
 					{
-						"cond": "qid[1].val=1 && ISSUPPORT_SS1=false",
+						"cond": "qid[1].val=2",
 						"action": [
 							{
 								"file": "CDF.xml",
 								"content": [
 									{
-										"method": "add",
+										"method": "remove",
 										"element": [
 											{
-												"param": "capability_smartstream_version&capability_smartstream_support&capability_smartstream_nstream&capability_smartstream_mode_autotracking&capability_smartstream_mode_manual&capability_smartstream_mode_hybrid&capability_smartstream_nwindow_autotracking&capability_smartstream_nwindow_manual&capability_smartstream_nwindow_hybrid_autotracking&capability_smartstream_nwindow_hybrid_manual&capability_smartstream_windomain",
-												"check": null
-											},
-											{
-												"param": "videoin_c<n>_s<m>_h264_smartstream2_enable",
-												"check": "\"%d\",\"0~1\""
-											},
-											{
-												"cond": "ISSUPPORT_H265=true",
-												"param": "videoin_c<n>_s<m>_h265_smartstream2_enable",
-												"check": "\"%d\",\"0~1\""
-											},
-											{
-												"cond": "CAMERA_MODEL=SD",
-												"param": "videoin_c<n>_s<m>_h264_smartstream2_mode",
-												"check": "\"%e\",\"autotracking\""
-											},
-											{
-												"cond": "CAMERA_MODEL!=SD",
-												"param": "videoin_c<n>_s<m>_h264_smartstream2_mode",
-												"check": "\"%e\",\"autotracking,manual,hybrid\""
-											},
-											{
-												"cond": "ISSUPPORT_H265=true && CAMERA_MODEL=SD",
-												"param": "videoin_c<n>_s<m>_h265_smartstream2_mode",
-												"check": "\"%e\",\"autotracking\""
-											},
-											{
-												"cond": "ISSUPPORT_H265=true && CAMERA_MODEL!=SD",
-												"param": "videoin_c<n>_s<m>_h265_smartstream2_mode",
-												"check": "\"%e\",\"autotracking,manual,hybrid\""
-											},
-											{
-												"param": "videoin_c<n>_s<m>_h264_smartstream2_qualitypriority",
-												"check": "\"%d\",\"-5~-1,1~5\""
-											},
-											{
-												"cond": "ISSUPPORT_H265=true",
-												"param": "videoin_c<n>_s<m>_h265_smartstream2_qualitypriority",
-												"check": "\"%d\",\"-5~-1,1~5\""
-											},
-											{
-												"cond": "qid[2].val!=0",
-												"param": "videoin_c<n>_s<m>_h264_smartstream2_win_i<qid[2].val>_enable",
-												"check": "\"%d\",\"0~1\""
-											},
-											{
-												"cond": "ISSUPPORT_H265=true && qid[2].val!=0",
-												"param": "videoin_c<n>_s<m>_h265_smartstream2_win_i<qid[2].val>_enable",
-												"check": "\"%d\",\"0~1\""
-											},
-											{
-												"cond": "qid[2].val!=0",
-												"param": "videoin_c<n>_s<m>_h264_smartstream2_win_i<qid[2].val>_home",
-												"check": "\"%d,%d\",\"0~320\",\"0~240\""
-											},
-											{
-												"cond": "ISSUPPORT_H265=true && qid[2].val!=0",
-												"param": "videoin_c<n>_s<m>_h265_smartstream2_win_i<qid[2].val>_home",
-												"check": "\"%d,%d\",\"0~320\",\"0~240\""
-											},
-											{
-												"cond": "qid[2].val!=0",
-												"param": "videoin_c<n>_s<m>_h264_smartstream2_win_i<qid[2].val>_size",
-												"check": "\"%dx%d\",\"0~320\",\"0~240\""
-											},
-											{
-												"cond": "ISSUPPORT_H265=true && qid[2].val!=0",
-												"param": "videoin_c<n>_s<m>_h265_smartstream2_win_i<qid[2].val>_size",
-												"check": "\"%dx%d\",\"0~320\",\"0~240\""
-											},
-											{
-												"param": "videoin_c<n>_s<m>_h264_cbr_quant",
-												"check": "\"%d\",\"1~5,100\""
-											},
-											{
-												"cond": "ISSUPPORT_H265=true",
-												"param": "videoin_c<n>_s<m>_h265_cbr_quant",
-												"check": "\"%d\",\"1~5,100\""
-											},
-											{
-												"param": "videoin_c<n>_s<m>_mjpeg_cbr_quant",
-												"check": "\"%d\",\"1~5,100\""
-											},
-											{
-												"param": "videoin_c<n>_s<m>_h264_cbr_qpercent",
-												"check": "\"%d\",\"1~100\""
-											},
-											{
-												"cond": "ISSUPPORT_H265=true",
-												"param": "videoin_c<n>_s<m>_h265_cbr_qpercent",
-												"check": "\"%d\",\"1~100\""
-											},
-											{
-												"param": "videoin_c<n>_s<m>_mjpeg_cbr_qpercent",
-												"check": "\"%d\",\"1~100\""
+												"param": "capability_smartstream&videoin_c<n>_s<m>_h264_smartstream2&videoin_c<n>_s<m>_h265_smartstream2&videoin_c<n>_s<m>_h264_cbr&videoin_c<n>_s<m>_h265_cbr&videoin_c<n>_s<m>_mjpeg_cbr"
 											}
 										]
-									}
-								]
-							},
-							{
-								"file": "config_capability.xml",
-								"content": [
+									},
 									{
-										"method": "add",
+										"method": "modify",
 										"element": [
 											{
-												"param": "capability_smartstream_version",
-												"value": "2.0"
+												"param": "videoin_c<n>_s<m>_h264_ratecontrolmode",
+												"check": "-smart"
 											},
 											{
-												"param": "capability_smartstream_support",
-												"value": "1"
-											},
-											{
-												"param": "capability_smartstream_nstream",
-												"value": "TOTALSTREAMNUM"
-											},
-											{
-												"param": "capability_smartstream_mode_autotracking",
-												"value": "?1"
-											},
-											{
-												"param": "capability_smartstream_mode_manual",
-												"value": "?1"
-											},
-											{
-												"param": "capability_smartstream_mode_hybrid",
-												"value": "?1"
-											},
-											{
-												"param": "capability_smartstream_nwindow_autotracking",
-												"value": "?8"
-											},
-											{
-												"param": "capability_smartstream_nwindow_maunal",
-												"value": "?3"
-											},
-											{
-												"param": "capability_smartstream_nwindow_hybrid_autotracking",
-												"value": "?5"
-											},
-											{
-												"param": "capability_smartstream_nwindow_hybrid_manual",
-												"value": "?3"
-											},
-											{
-												"param": "capability_smartstream_windomain",
-												"value": "qvga"
+												"cond": "ISSUPPORT_H265=true",
+												"param": "videoin_c<n>_s<m>_h265_ratecontrolmode",
+												"check": "-smart"
 											}
 										]
-									}
-								]
-							},
-							{
-								"file": "config_smartstream_c0.xml",
-								"content": [
-									{
-										"method": "add",
-										"element": [
-											{
-												"param": "videoin_c<n>_s<m>_h264_smartstream2_enable",
-												"value": "?0"
-											},
-											{
-												"cond": "ISSUPPORT_H265=true",
-												"param": "videoin_c<n>_s<m>_h265_smartstream2_enable",
-												"value": "?0"
-											},
-											{
-												"param": "videoin_c<n>_s<m>_h264_smartstream2_mode",
-												"value": "autotracking"
-											},
-											{
-												"cond": "ISSUPPORT_H265=true",
-												"param": "videoin_c<n>_s<m>_h265_smartstream2_mode",
-												"value": "autotracking"
-											},
-											{
-												"param": "videoin_c<n>_s<m>_h264_smartstream2_qualitypriority",
-												"value": "?1"
-											},
-											{
-												"cond": "ISSUPPORT_H265=true",
-												"param": "videoin_c<n>_s<m>_h265_smartstream2_qualitypriority",
-												"value": "?1"
-											},
-											{
-												"cond": "qid[2].val!=0",
-												"param": "videoin_c<n>_s<m>_h264_smartstream2_win_i<qid[2].val>_enable",
-												"value": "?0"
-											},
-											{
-												"cond": "ISSUPPORT_H265=true && qid[2].val!=0",
-												"param": "videoin_c<n>_s<m>_h265_smartstream2_win_i<qid[2].val>_enable",
-												"value": "?0"
-											},
-											{
-												"cond": "qid[2].val!=0",
-												"param": "videoin_c<n>_s<m>_h264_smartstream2_win_i<qid[2].val>_home",
-												"value": "?150,110"
-											},
-											{
-												"cond": "ISSUPPORT_H265=true && qid[2].val!=0",
-												"param": "videoin_c<n>_s<m>_h265_smartstream2_win_i<qid[2].val>_home",
-												"value": "?150,110"
-											},
-											{
-												"cond": "qid[2].val!=0",
-												"param": "videoin_c<n>_s<m>_h264_smartstream2_win_i<qid[2].val>_size",
-												"value": "?100x75"
-											},
-											{
-												"cond": "ISSUPPORT_H265=true && qid[2].val!=0",
-												"param": "videoin_c<n>_s<m>_h265_smartstream2_win_i<qid[2].val>_size",
-												"value": "?100x75"
-											}
-										]
-									}
-								]
-							},
-							{
-								"file": "config_videoin_c0.xml",
-								"content": [
-									{
-										"method": "add",
-										"element": [
-											{
-												"param": "videoin_c<n>_s<m>_h264_cbr_quant",
-												"value": "?4"
-											},
-											{
-												"cond": "ISSUPPORT_H265=true",
-												"param": "videoin_c<n>_s<m>_h265_cbr_quant",
-												"value": "?4"
-											},
-											{
-												"param": "videoin_c<n>_s<m>_mjpeg_cbr_quant",
-												"value": "?4"
-											},
-											{
-												"param": "videoin_c<n>_s<m>_h264_cbr_qpercent",
-												"value": "?70"
-											},
-											{
-												"cond": "ISSUPPORT_H265=true",
-												"param": "videoin_c<n>_s<m>_h265_cbr_qpercent",
-												"value": "?70"
-											},
-											{
-												"param": "videoin_c<n>_s<m>_mjpeg_cbr_qpercent",
-												"value": "?40"
-											}
-										]
-									}
-								]
-							}
-						]
-					},
-					{
-						"cond": "qid[1].val=2 && ISSUPPORT_SS1=false",
-						"action": [
-							{
-								"file": "CDF.xml",
-								"content": [
+									},
 									{
 										"method": "add",
 										"element": [
@@ -585,6 +385,14 @@
 							{
 								"file": "config_capability.xml",
 								"content": [
+									{
+										"method": "remove",
+										"element": [
+											{
+												"param": "capability_smartstream"
+											}
+										]
+									},
 									{
 										"method": "add",
 										"element": [
@@ -595,14 +403,38 @@
 										]
 									}
 								]
-							}
-						]
-					},
-					{
-						"cond": "qid[1].val=2 && ISSUPPORT_SS1=true",
-						"action": [
+							},
 							{
-								"ask": "Do not support smart stream 1.0 anymore!!! Please confirm the SPEC"
+								"file": "config_smartstream_c0.xml",
+								"content": [
+									{
+										"method": "remove",
+										"element": [
+											{
+												"cond": "ISSUPPORT_H265=true",
+												"param": "videoin_c<n>_s<m>_h264_smartstream&videoin_c<n>_s<m>_h265_smartstream&videoin_c<n>_s<m>_h264_smartstream2&videoin_c<n>_s<m>_h265_smartstream2"
+											},
+											{
+												"cond": "ISSUPPORT_H265=false",
+												"param": "videoin_c<n>_s<m>_h264_smartstream&videoin_c<n>_s<m>_h264_smartstream2"
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_videoin_c0.xml",
+								"content": [
+									{
+										"method": "remove",
+										"element": [
+											{
+												"param": "videoin_c<n>_s<m>_h264_cbr&videoin_c<n>_s<m>_h265_cbr&videoin_c<n>_s<m>_mjpeg_cbr"
+							
+											}
+										]
+									}
+								]
 							}
 						]
 					}
