@@ -310,6 +310,7 @@
 										"method": "add",
 										"element": [
 											{
+												"cond": "qid[2].val=4",
 												"param": "capability_peripheral_c<n>_waterspray_support&capability_peripheral_c<n>_wiper_support",
 												"value": 0
 											},
@@ -322,6 +323,16 @@
 												"cond": "qid[2].val=2",
 												"param": "capability_peripheral_c<n>_waterspray_support",
 												"value": 1
+											},
+											{
+												"cond": "qid[2].val=2",
+												"param": "capability_peripheral_c<n>_wiper_support",
+												"value": 0
+											},
+											{
+												"cond": "qid[2].val=1",
+												"param": "capability_peripheral_c<n>_waterspray_support",
+												"value": 0
 											},
 											{
 												"cond": "qid[2].val=1",

@@ -2,13 +2,14 @@
 	"name": {
 		"CAMERA_MODEL":"Bullet",
 		"CAMERA_TYPE":"Standard",
+		"IRIS_TYPE":"Piris",
 		"ISSUPPORT_H265":false,
 		"ISSUPPORT_SS1":false,
 		"ISSUPPORT_WDRPRO":false,
 		"ISSUPPORT_EPTZ":"capability_eptz",
 		"TOTALSTREAMNUM":"capability_nmediastream",
 		"TOTALPROFILENUM":"capability_nvideoinprofile",
-		"IRIS_TYPE":"Piris"
+		"TOTALVIDEOMODENUM":"capability_videoin_c0_nmode"
 	},
 	"content": [
 		{
@@ -17,6 +18,10 @@
 				{
 					"cond":"'VC' in 'system_info_extendedmodelname'",
 					"value":"VC"
+				},
+				{
+					"cond":"'VS' in 'system_info_extendedmodelname'",
+					"value":"VS"
 				},
 				{
 					"cond":"capability_fisheye=1",

@@ -1,0 +1,213 @@
+{
+	"version": "0303b",
+	"content": {
+		"spec": [
+			{
+				"type": "remove defaultsetting group",
+				"task": [
+					{
+						"cond": true,
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_videoin_c<n>_mode<TOTALVIDEOMODENUM>_defaultsetting_s0",
+												"seclevel": "7/7"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"type": "Add capability_camctrl_c0 group",
+				"task": [
+					{
+						"cond": "capability_ptzenabled>0",
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_camctrl_c<n>_ptztunnel",
+												"aliasxpath": "capability_camctrl_ptztunnel"
+											},
+											{
+												"param": "capability_camctrl_c<n>_privilege",
+												"aliasxpath": "capability_camctrl_privilege"
+											},
+											{
+												"param": "capability_camctrl_c<n>_rs485&capability_camctrl_c<n>_buildinpt&capability_camctrl_c<n>_zoommodule",
+												"check": "null"
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_capability.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"cond": "CAMERA_MODEL!=SD",
+												"param": "capability_camctrl_c<n>_rs485",
+												"value": 2
+											},
+											{
+												"cond": "CAMERA_MODEL=SD",
+												"param": "capability_camctrl_c<n>_rs485",
+												"value": 1
+											},
+											{
+												"cond": "CAMERA_MODEL=Box && CAMERA_MODEL=IZ",
+												"param": "capability_camctrl_c<n>_buildinpt",
+												"value": 0
+											},
+											{
+												"cond": "CAMERA_MODEL=SD",
+												"param": "capability_camctrl_c<n>_buildinpt",
+												"value": 3
+											},
+											{
+												"cond": "CAMERA_MODEL=Box",
+												"param": "capability_camctrl_c<n>_zoommodule",
+												"value": 0
+											},
+											{
+												"cond": "CAMERA_TYPE=PTZ",
+												"param": "capability_camctrl_c<n>_zoommodule",
+												"value": 1
+											}
+										]
+									},
+									{
+										"method": "remove",
+										"element": [
+											{
+												"param": "capability_camctrl_c<n>_ptztunnel&capability_camctrl_c<n>_privilege"
+											}
+										]
+									}
+								]
+							}
+						]
+					},
+					{
+						"cond": "capability_ptzenabled=0",
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "remove",
+										"element": [
+											{
+												"param": "capability_camctrl_c<n>"
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_capability.xml",
+								"content": [
+									{
+										"method": "remove",
+										"element": [
+											{
+												"param": "capability_camctrl_c<n>"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"type": "add capability_ptz_c0 group",
+				"task": [
+					{
+						"cond": "CAMERA_TYPE=PTZ",
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_ptz_c<n>_zoomspeedlv&capability_ptz_c<n>_minzoom&capability_ptz_c<n>_maxzoom&capability_ptz_c<n>_maxdzoom&capability_ptz_c<n>_focusspeedlv&capability_ptz_c<n>_minfocus&capability_ptz_c<n>_maxfocus",
+												"check": "null"
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_capability.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_ptz_c<n>_zoomspeedlv&capability_ptz_c<n>_minzoom&capability_ptz_c<n>_maxzoom&capability_ptz_c<n>_maxdzoom&capability_ptz_c<n>_focusspeedlv&capability_ptz_c<n>_minfocus&capability_ptz_c<n>_maxfocus",
+												"value": "?0"
+											}
+										]
+									}
+								]
+							}
+						]
+					},
+					{
+						"cond": "CAMERA_MODEL=SD",
+						"action": [
+							{
+								"file": "CDF.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_ptz_c<n>_panspeedlv&capability_ptz_c<n>_minpan&capability_ptz_c<n>_maxpan&capability_ptz_c<n>_minpanangle&capability_ptz_c<n>_maxpanangle&capability_ptz_c<n>_tiltspeedlv&capability_ptz_c<n>_mintilt&capability_ptz_c<n>_maxtilt&capability_ptz_c<n>_mintiltangle&capability_ptz_c<n>_maxtiltangle",
+												"check": "null"
+											}
+										]
+									}
+								]
+							},
+							{
+								"file": "config_capability.xml",
+								"content": [
+									{
+										"method": "add",
+										"element": [
+											{
+												"param": "capability_ptz_c<n>_panspeedlv&capability_ptz_c<n>_minpan&capability_ptz_c<n>_maxpan&capability_ptz_c<n>_minpanangle&capability_ptz_c<n>_maxpanangle&capability_ptz_c<n>_tiltspeedlv&capability_ptz_c<n>_mintilt&capability_ptz_c<n>_maxtilt&capability_ptz_c<n>_mintiltangle&capability_ptz_c<n>_maxtiltangle",
+												"value": "?0"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			}
+		]
+	}
+}
