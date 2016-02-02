@@ -135,9 +135,26 @@ class Add(Base):
 				et_new_node.text = m.group(1)
 				#et_comment_node = et.Comment('[Notice] Please modify the default value below !!!')
 				et_comment_node = et.Comment('Modify it')
-				ori_object.append(et_comment_node)
+				if self.param_exist_already:
+					et_new_node_index = ori_object.getchildren().index(et_new_node)
+					ori_object.insert(et_new_node_index, et_comment_node)
+				else:
+					ori_object.append(et_comment_node)
 			else:
 				et_new_node.text = value
+
+		# Handle CDF ...
+		if element.has_key('seclevel'):
+			seclevel = element['seclevel']
+
+			# <seclevel>
+			et_new_seclevel_node = et.Element('seclevel')
+			et_new_seclevel_node.text = str(seclevel)
+			if self.param_exist_already:
+				et_new_node_index = ori_object.getchildren().index(et_new_node)
+				ori_object.insert(et_new_node_index, et_new_seclevel_node)
+			else:
+				et_new_node.append(et_new_seclevel_node)
 
 		# Handle CDF ...
 		if element.has_key('check') and self.param_exist_already != True:
@@ -151,6 +168,7 @@ class Add(Base):
 				if m:
 					# default check value
 					et_new_check_node.text = m.group(1)
+					et_new_node.append(et_new_check_node)
 					#et_comment_node = et.Comment('[Notice] Please modify the check value below !!!')
 					et_comment_node = et.Comment('Modify it')
 					et_new_node.append(et_comment_node)
@@ -165,7 +183,7 @@ class Add(Base):
 
 
 		# Handle CDF ...
-		if element.has_key('aliasxpath') and self.param_exist_already != True:
+		if element.has_key('aliasxpath'):
 			aliasxpath = element['aliasxpath']
 
 			tmp = Evaluator(aliasxpath, [aliasxpath], self.matrix)()
@@ -175,11 +193,6 @@ class Add(Base):
 			et_new_aliasxpath_node = et.Element('aliasxpath')
 			et_new_aliasxpath_node.text = aliasxpath
 			et_new_node.append(et_new_aliasxpath_node)
-
-			# <value>
-			if not et_new_value_node:
-				et_new_value_node = et.Element('value')
-				et_new_node.append(et_new_value_node)
 
 class Remove(Base):
 	""" Remove the tag from XML """
@@ -255,10 +268,17 @@ class Modify(Base):
 				# if value start with '+' or '-'
 				m1 = re.match('\+(.*)', value)
 				m2 = re.match('\-(.*)', value)
+				m3 = re.match('\?(.*)', value)
 				if m1:
 					self.insert_sub_text(et_child_tag, m1.group(1))
 				elif m2:
 					self.remove_sub_text(et_child_tag, m2.group(1))
+				elif m3:
+					# default check value
+					et_child_tag.text = m3.group(1)
+					et_comment_node = et.Comment('Modify it')
+					et_new_node_index = et_target_tag.getchildren().index(et_child_tag)
+					et_target_tag.insert(et_new_node_index+1, et_comment_node)
 				else:
 					et_child_tag.text = value
 
