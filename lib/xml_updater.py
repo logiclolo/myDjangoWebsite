@@ -265,7 +265,7 @@ class Modify(Base):
 			if et_child_tag != None:
 				value = str(element['check'])
 
-				# if value start with '+' or '-'
+				# if value start with '+' or '-' or '?'
 				m1 = re.match('\+(.*)', value)
 				m2 = re.match('\-(.*)', value)
 				m3 = re.match('\?(.*)', value)
