@@ -3,6 +3,30 @@
 	"content": {
 		"spec": [
 			{
+				"type": "API version",
+				"task": [
+					{
+						"cond": true,
+						"action": [
+							{
+								"file": "config_capability.xml",
+								"content": [
+									{
+										"method": "modify",
+										"element": [
+											{
+												"param": "capability_api_httpversion",
+												"api": "0301c"
+											}
+										]
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
 				"type": "Dynamic intra frame period",
 				"ques": [
 					{

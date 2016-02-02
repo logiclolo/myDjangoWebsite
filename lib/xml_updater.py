@@ -248,6 +248,17 @@ class Modify(Base):
 		return stain
 
 	def handle_last_node(self, et_target_tag, element):
+		# Handle API version
+		if element.has_key('api'):
+			value = str(element['api'])
+			text = et_target_tag.text
+			# if the value format of api version is xxxxx_y
+			m = re.match('(.*)\_(.*)', text)
+			if m:
+				self.insert_api_text(et_target_tag, "_" + m.group(2), value)
+			else:
+				et_target_tag.text = value
+
 		# Handle ordinary config
 		if element.has_key('value'):
 			value = str(element['value'])
@@ -303,6 +314,12 @@ class Modify(Base):
 				subs.remove(sub_text)
 			value = m.group(1) + ',"' + ','.join(subs) + '"'
 			et_child_tag.text = value
+
+	def insert_api_text(self, et_target_tag, sub_text, version):
+		subs = []
+		subs.append(sub_text)
+		value = version + "".join(subs)
+		et_target_tag.text = value
 
 
 class CommentedTreeBuilder ( et.XMLTreeBuilder ):
