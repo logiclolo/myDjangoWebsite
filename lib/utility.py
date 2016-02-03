@@ -49,7 +49,12 @@ def choose_model(model_file):
 
 			model = strip_model(tmp)
 
-			print bcolors.WARNING + 'We are ready to update the model:'
+			if config.g_format:
+				option = 'format'
+			else:
+				option = 'update'
+
+			print bcolors.WARNING + 'We are going to %s the CDF/configs of:' % option
 			print model
 			print bcolors.NORMAL
 
@@ -66,9 +71,13 @@ def choose_model(model_file):
 
 		output(model_file, tmp)
 
-		#print bcolors.WARNING + '\'%s\' file does not exist' % model_file + bcolors.NORMAL
-		print 'Configurator will update the model CDF/configs according to \'%s\'' % model_file
-		print bcolors.WARNING + 'We generate the \'%s\' for you and ready to update the model:' % model_file
+		if config.g_format:
+			option = 'format'
+		else:
+			option = 'update'
+
+		print 'Configurator will %s the CDF/configs of model according to \'%s\'' % (option, model_file)
+		print bcolors.WARNING + 'We generate the \'%s\' for you and ready to %s CDF/configs of:' % (model_file, option)
 		print model
 		print bcolors.NORMAL
 
