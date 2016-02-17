@@ -10,7 +10,6 @@
 #define MODULE_VERSION_STR "2.0.0.0"
 #define MODIFY_DATETIME "2009/10/13 13:11:48"
 volatile char rcsid[] = "$Id: " MODULE_VERSION_STR ",confclient," MODIFY_DATETIME " $";
-#define PARAM_IS_OK 0
 #define PARAM_IS_NOT_EXIST 2
 
 void Usage(void)
@@ -44,6 +43,7 @@ void ShowVersion( void )
 int main( int argc, char *argv[] )
 {
 	int iCh;
+	int ret;
 	char szXPath[8192];
 	char szValue[1024];
 	TConfOpt confopt;
@@ -77,16 +77,21 @@ int main( int argc, char *argv[] )
 				break;
 			case 'x':
 				strcpy( szXPath, optarg );
-				if( Configer_GetParamValueByXPath( szXPath, szValue, sizeof( szValue ) ) == S_OK )
+				ret = Configer_GetParamValueByXPath( szXPath, szValue, sizeof( szValue ) );
+				if( ret == S_OK )
 				{
 					/*printf( "%s=%s\n", szXPath, szValue );*/
 					printf( "%s\n", szValue );
-					return PARAM_IS_OK;
+					return S_OK;
+				}
+				else if( ret == PARAM_IS_NOT_EXIST )
+				{
+					return PARAM_IS_NOT_EXIST;
 				}
 				else
 				{
 					/*printf( "%s is invalid\n", szXPath );*/
-					return PARAM_IS_NOT_EXIST;
+					return S_FAIL;
 				}
 				break;
 			case 'p':

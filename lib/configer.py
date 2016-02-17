@@ -81,9 +81,8 @@ class Configer(object):
 			# different returncode has its own meaning
 			#
 			# (1) returncode=0, confclient get the param successfully
-			# (2) returncode=1, configer is not ready for confclient to connect 
-			# (3) returncode=2, the param does't exist
-			# (4) returncode=255, same as (2) but using 'confclient -g'
+			# (2) returncode=2, the param does't exist
+			# (3) returncode=255 (-1), configer is not ready for confclient to connect 
 
 			if retry == 0 or returncode == 2:
 				return None

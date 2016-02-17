@@ -67,6 +67,7 @@ SCODE Configer_Control( TConfOpt *pConfopt, char *pszOutBuffer, DWORD dwSize )
 	int iFD;
 	char szCmd[8192];
 	char szBuf[1024];
+	char szSocketPath[512];
 
 	memset( szCmd, 0, sizeof( szCmd ) );
 	if( ( pConfopt->szType[0] == '\0' ) || ( pConfopt->pszXPath == NULL ) )
@@ -103,7 +104,9 @@ SCODE Configer_Control( TConfOpt *pConfopt, char *pszOutBuffer, DWORD dwSize )
 	}
 	memset( &sunx, 0, sizeof( sunx ) );
 	sunx.sun_family = AF_UNIX;
-	(void) strncpy( sunx.sun_path, "/tmp/configer", sizeof( sunx.sun_path ) );		
+	strcat(szSocketPath, getenv("HOME"));
+	strcat(szSocketPath, "/tmp/configer");
+	(void) strncpy( sunx.sun_path, szSocketPath, sizeof( sunx.sun_path ) );		
 	if( connect( iFD, (struct sockaddr *)&sunx,	sizeof( sunx.sun_family ) + strlen( sunx.sun_path ) ) < 0)
 	{
 		printf( "connect failed!" );
@@ -338,5 +341,5 @@ SCODE Configer_GetParamValueByXPath( const char *pszXPath, char *pszValue, DWORD
 		tConfOpt.pszXPath = (char *) pszXPath;
 		return Configer_Control( &tConfOpt, pszValue, dwSize );
 	}
-	return S_FAIL;
+	return 2;
 }
