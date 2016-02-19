@@ -11,6 +11,7 @@ from xml_updater import *
 from utility import *
 from action_dispatcher import *
 import config
+import atexit
 import tempfile
 from progress_bar import *
 
@@ -39,6 +40,7 @@ def update_config(obj):
 
 		configer = Configer(model)
 		m['configer'] = configer
+		config.g_configer = configer
 
 		for api in apis:
 			obj.parse_api_rule(api, model)
@@ -62,6 +64,11 @@ def check_envs():
 		return False
 
 	return True
+
+def release():
+	print 'bye bye'
+	if config.g_configer is not None:
+		config.g_configer.stop()
 
 def usage():
 	usage = 'Usage: %s [-a version] [-f version]\
@@ -94,6 +101,8 @@ if __name__ == '__main__':
 	if len(sys.argv) < 2:
 		usage()
 		sys.exit(0)
+
+	atexit.register(release)
 
 	if version == '':
 		print 'Please specify a http_api_version'

@@ -184,6 +184,7 @@ class RuleParser(object):
 		for m in self.matrix:
 			configer = Configer(m['model'])
 			m['configer'] = configer
+			config.g_configer = configer
 
 			m['content'] = self.compose_internal_param_dict(jdata['name'], m)
 			for content in jdata['content']:
