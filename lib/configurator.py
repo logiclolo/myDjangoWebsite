@@ -11,11 +11,19 @@ from xml_updater import *
 from utility import *
 from action_dispatcher import *
 import config
+import tempfile
+from progress_bar import *
 
 def action_dispatch(matrix):
-	print '\nhandling ...'
+	# spinning indicator
+	print 'handling ...'
+	(number, tmp_file) = tempfile.mkstemp()
+	example = ThreadingSpinning(tmp_file)
+
 	for action in matrix['action']:
 		Dispatcher(action, matrix)
+
+	os.remove(tmp_file)
 
 def update_config(obj):
 	matrix = obj.matrix
@@ -36,8 +44,9 @@ def update_config(obj):
 			obj.parse_api_rule(api, model)
 			action_dispatch(m)
 
+			# print results
 			if config.g_format:	
-				print 'Formating ...'
+				print '\nFormating ...'
 				pp = pprint.PrettyPrinter()
 				pp.pprint(config.g_format_list)
 			else:
