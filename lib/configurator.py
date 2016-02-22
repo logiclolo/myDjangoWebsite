@@ -127,33 +127,7 @@ if __name__ == '__main__':
 	# We still need to check the format of configs
 	# even if user does not specify format
 	if not config.g_format:
-		tmp = []
-
-		for matrix in obj.matrix:
-			apis = matrix['update']
-			model = matrix['model']
-
-			for api in apis:
-				tmp = list(set(tmp + obj.check_file_well_formed(api, model)))
-
-		if len(tmp) > 0:
-			print bcolors.WARNING
-			print 'The following CDF or configs is not a well-formed xml:' + bcolors.NORMAL
-			pp = pprint.PrettyPrinter()
-			pp.pprint(tmp)
-			print '------------------------------------------------------------------------------------------------------------'
-			print '強烈建議:'
-			print '(1)先執行格式化指令，即\"configurator -f api_version\"'
-			print '(2)commit 格式化後的結果'
-			print '執行完以上步驟後，再來更新設定檔，這樣比較容易看出更新變動\n'
-			print '如果不先格式化就繼續更新設定檔，變更內容會包含\"格式變動\"，容易造成比對上的困擾'
-			print '------------------------------------------------------------------------------------------------------------'
-			print 'Press any key to continue or \'q\' to exit ...'
-
-			ans = getch()
-			if ans == 'q':
-				sys.exit(0)
-
+		check_file_format(obj)
 
 	update_config(obj)
 	copy_tmp_to_flashfs_base()
