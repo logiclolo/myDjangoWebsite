@@ -66,7 +66,7 @@ def check_envs():
 	return True
 
 def release():
-	print 'bye bye'
+	remove_flashfs_tmp()
 	if config.g_configer is not None:
 		config.g_configer.stop()
 
@@ -118,6 +118,7 @@ if __name__ == '__main__':
 		sys.exit(0)
 	
 	models = choose_model('model-list')
+	copy_flashfs_base_to_tmp(models)
 
 	obj = RuleParser(path, models)
 	obj.parse_common_rule()
@@ -155,5 +156,6 @@ if __name__ == '__main__':
 
 
 	update_config(obj)
+	copy_tmp_to_flashfs_base()
 
 # vim: tabstop=8 shiftwidth=8 softtabstop=8 noexpandtab

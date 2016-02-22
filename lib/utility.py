@@ -11,6 +11,19 @@ import config
 from copy import deepcopy
 from configer import *
 
+if os.getenv('PRODUCTDIR'):
+	# path in working copy
+	flashfs_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
+	common_base = os.path.join(flashfs_base, 'common')  
+
+	# path in tmp
+	tmp_base = os.path.join(os.getcwd(), 'tmp')
+	flashfs_tmp = os.path.join(tmp_base, 'flashfs_base')
+	common_tmp = os.path.join(flashfs_tmp, 'common')
+else:
+	print 'Have you source the project devel file?'
+	sys.exit(1)
+
 
 def output(filename, content):
 	try:
@@ -24,7 +37,6 @@ def available_model():
 	tmp = []
 	capability = 'config_capability.xml'
 
-	flashfs_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
 	dirs = subprocess.Popen('find %s -iname %s' % (flashfs_base, capability), shell=True, stdout = subprocess.PIPE).stdout
 	for d in dirs: 	
 		d = re.sub('\n', '', d)
@@ -159,7 +171,6 @@ def show_all_api():
 def strip_model(model):
 	tmp = []
 
-	flashfs_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
 	for m in model:
 		path = os.path.join(flashfs_base, m)
 		if os.path.isdir(path):
@@ -169,21 +180,47 @@ def strip_model(model):
 
 	return tmp
 
+def copy_flashfs_base_to_tmp(models):
+	if not os.path.exists(flashfs_tmp):
+		os.makedirs(flashfs_tmp)
+
+	# copy models of flashfs_base from working copy to tmp
+	cmd = ''
+	for model in models:
+		src = os.path.join(flashfs_base, model)
+		dest = flashfs_tmp
+		cmd = cmd + 'cp -r %s %s;' % (src, dest)
+
+	src = common_base
+	dest = common_tmp
+	cmd = cmd + 'cp -r %s %s;' % (src, dest)
+	p = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE)
+	p.wait()
+
+def copy_tmp_to_flashfs_base():
+	cmd = 'cp -rf %s/* %s' % (flashfs_tmp, flashfs_base)
+	p = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE)
+	p.wait()
+
+def remove_flashfs_tmp():
+	cmd = 'rm -rf %s' % flashfs_tmp
+	p = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE)
+	p.wait()
+
 
 def locate_file(model, confile):
 
 	# search in 'flashfs_base' first
-	flashfs_base = os.path.join(os.getenv('PRODUCTDIR'), 'flashfs_base')  
-	base = os.path.join(flashfs_base, model)  
-	cmd = 'find %s -iname %s' % (base, confile)
+	path = os.path.join(flashfs_tmp, model)  
+	cmd = 'find %s -iname %s' % (path, confile)
 	path = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE).stdout
 	for p in path: 	
 		p = re.sub('\n', '', p)
 		return p
 
 	# and then search in 'common'
-	base = os.path.join(flashfs_base, 'common')
-	cmd = 'find %s -iname %s' % (base, confile)
+	path = common_tmp  
+	cmd = 'find %s -iname %s' % (path, confile)
 	path = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE).stdout
 	for p in path: 	
 		p = re.sub('\n', '', p)
@@ -201,7 +238,7 @@ def xml_update_err_show():
 		tmp_remove = []
 		tmp_add = []
 
-		print 'Upgrading ... %s' % u
+		print '\nUpgrading ... %s' % u
 
 		for err in config.g_update_err_list:
 			if u == err[0]:
