@@ -1,0 +1,26 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<title>YNM</title>
+<script src="cookies.js"></script>
+<script src="index.js"></script>
+<link rel="stylesheet" type="text/css" href="index.css">
+</head>
+
+<body onload="on_load()">
+	<div class="header">
+		<span class="title">YNM自動化測試系統</span><span class="version">v0.01</span>
+	</div>
+	<div id="outer">
+	<div id="sidebar">
+		<!--<span class="group">查詢</span>-->
+		<a id="register" href="register.html" onclick="return on_click(this)">註冊Camera</a>
+		<a id="report" href="report.html" onclick="return on_click(this)">測試報告</a>
+	</div>
+	<div id="frame">
+		<iframe id="content_frame" src="employee.html" name="content_frame">
+		</iframe>
+	</div>
+	</div>
+</body>
