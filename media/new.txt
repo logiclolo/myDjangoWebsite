@@ -1,0 +1,44 @@
+OpenSSL 0.9.8j 07 Jan 2009
+built on: Mon Feb 17 15:42:39 CST 2014
+options:bn(64,32) md2(int) rc4(ptr,char) des(idx,cisc,16,long) aes(partial) idea(int) blowfish(ptr)
+compiler: arm-linux-gcc -fPIC -DOPENSSL_PIC -DOPENSSL_THREADS -D_REENTRANT -DDSO_DLFCN -DHAVE_DLFCN_H -DL_ENDIAN -DTERMIO -O3 -fomit-frame-pointer -Wall
+available timing options: TIMES TIMEB HZ=100 [sysconf value]
+timing function used: times
+The 'numbers' are in 1000s of bytes per second processed.
+type             16 bytes     64 bytes    256 bytes   1024 bytes   8192 bytes
+md2                174.90k      407.64k      610.40k      697.07k      715.78k
+mdc2                 0.00         0.00         0.00         0.00         0.00
+md4               1169.45k     4735.49k    14473.95k    30045.04k    43491.08k
+md5                794.67k     3267.72k    10193.05k    21765.27k    32199.19k
+hmac(md5)         1130.93k     3917.46k    11651.91k    23308.76k    32876.86k
+sha1               685.58k     2455.98k     6396.60k    10700.29k    13262.33k
+rmd160             609.08k     2059.67k     5246.55k     8688.69k    10698.59k
+rc4              15732.82k    18275.42k    19123.29k    19578.47k    19682.57k
+des cbc           2729.92k     2943.40k     3005.49k     3021.65k     2865.84k
+des ede3          1032.39k     1060.17k     1066.87k     1069.25k     1023.32k
+idea cbc          3939.99k     4421.72k     4573.55k     4614.80k     4623.99k
+seed cbc             0.00         0.00         0.00         0.00         0.00
+rc2 cbc           3002.25k     3531.74k     3630.52k     3657.14k     3663.27k
+rc5-32/12 cbc        0.00         0.00         0.00         0.00         0.00
+blowfish cbc      5577.29k     6438.25k     6760.53k     6848.55k     6855.70k
+cast cbc          4380.03k     5044.92k     5236.77k     5289.08k     4912.48k
+aes-128 cbc       3175.01k     3478.77k     3566.05k     3590.12k     3295.85k
+aes-192 cbc       2759.41k     3032.41k     3102.62k     3137.66k     3012.81k
+aes-256 cbc       2465.41k     2671.29k     2724.15k     2742.35k     2642.67k
+camellia-128 cbc        0.00         0.00         0.00         0.00         0.00
+camellia-192 cbc        0.00         0.00         0.00         0.00         0.00
+camellia-256 cbc        0.00         0.00         0.00         0.00         0.00
+sha256             925.30k     2329.34k     4235.82k     5329.56k     5764.34k
+sha512              73.38k      293.72k      430.86k      595.69k      666.79k
+aes-128 ige       2514.67k     2838.45k     3362.10k     3660.20k     3282.24k
+aes-192 ige       2398.68k     2698.27k     3013.74k     3167.94k     2882.17k
+aes-256 ige       2151.77k     2397.07k     2649.47k     2771.60k     2536.53k
+                  sign    verify    sign/s verify/s
+rsa  512 bits 0.007431s 0.000642s    134.6   1557.2
+rsa 1024 bits 0.034399s 0.001628s     29.1    614.2
+rsa 2048 bits 0.190000s 0.005013s      5.3    199.5
+rsa 4096 bits 1.204444s 0.016966s      0.8     58.9
+                  sign    verify    sign/s verify/s
+dsa  512 bits 0.006285s 0.007155s    159.1    139.8
+dsa 1024 bits 0.016016s 0.018887s     62.4     52.9
+dsa 2048 bits 0.049409s 0.058596s     20.2     17.1

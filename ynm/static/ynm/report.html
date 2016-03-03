@@ -1,0 +1,40 @@
+<!DOCTYPE HTML>
+<html ng-app="report">
+<head>
+<meta charset="utf-8">
+<title>Report</title>
+<script src="angular.js"></script>
+<script src="angular-cookies.js"></script>
+<script src="errmsg.js"></script>
+<script src="report.js"></script>
+<link rel="stylesheet" type="text/css" href="global.css">
+</head>
+
+<body ng-controller="report_ctrl" onload="on_load()">
+	<div class="content">
+		<div class="search">
+			<span>輸入 '產品型號' 或 '維護人'：</span>
+			<input id="input" class="textfield" type="text" ng-model="input" ng-change="query_report()" onchange="on_change(this)">
+		</div>
+
+		<div ng-repeat="r in reports" class="group" ng-show="hasdata">
+			<table>
+				<tr>
+					<td>報告名稱：</td><td>{{r.name}}</td>
+				</tr>
+				<tr>
+					<td>維護人：</td><td>{{r.maintainer}}</td>
+				</tr>
+				<tr>
+					<td>建立時間：</td><td>{{r.time}}</td>
+				</tr>
+				<tr>
+					<td><a href='/ynm/report/?show={{r.id}}' target="_blank">報告<a></td>
+				</tr>
+			</table>
+		</div>
+
+	</div>
+	<div class="footer">
+	</div>
+</body>

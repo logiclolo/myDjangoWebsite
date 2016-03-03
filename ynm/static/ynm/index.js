@@ -12,7 +12,7 @@ function on_load()
 	var prev_link = get_cookie('prevlink');
 	if (!prev_link)
 	{
-		var employee_page_link = document.getElementById('employee');
+		var employee_page_link = document.getElementById('register');
 		set_iframe(employee_page_link.href);
 		set_cookie('prevlink', employee_page_link.id);
 		select(employee_page_link);

@@ -1,0 +1,96 @@
+
+table.hasdata, table.hasdata th, table.hasdata td {
+	border: 1px solid #98bf21;
+}
+
+table.hasdata {
+	border-collapse: collapse;
+}
+
+table.hasdata th {
+	padding: 5px;
+	background-color: #a7c921;
+	color: #ffffff;
+}
+
+table.hasdata td {
+	padding: 5px;
+}
+
+table.hasdata tr.even td {
+	background-color: #eaf2d3;
+}
+
+input.textfield {
+	border: 1px solid #98bf21;
+}
+
+div.search {
+	margin-bottom: 20px;
+}
+
+div.form_layout {
+	margin-bottom: 10px;
+}
+
+div.form_layout span, div.form_layout input, div.form_layout select {
+	width: 120px;
+	float: left;
+	margin-bottom: 5px;
+}
+
+div.form_layout input {
+	width: 200px;
+}
+
+div.form_layout span {
+	padding-right: 10px;
+}
+
+div.form_layout br {
+	clear: left;
+}
+
+.group {
+	float: left;
+	border: 1px solid #98bf21;
+	width: 90%;
+	margin-bottom: 10px;
+}
+
+div#prizedata {
+	margin-top: 20px;
+	margin-left: 5px;
+	margin-bottom: 5px;
+}
+
+.namefield {
+	width: 60px;
+}
+
+span.error {
+	color: red;
+	font-size: 15px;
+	display: block;
+}
+
+span.success {
+	color: blue;
+	font-size: 15px;
+	display: block;
+}
+
+td.marker {
+	text-align: center;
+	font-size: 20px;
+}
+
+span.donator {
+	color: red;
+	display: block;
+	font-size: 15px; 	
+}
+
+.money {
+	text-align: right;
+}

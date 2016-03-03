@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Cameras</title>   
+    </head>
+    <body>
+    <!-- List of uploaded rules -->
+    {% if cameras %}
+        <ul>
+        {% for c in cameras %}
+            <p>Camera No.{{ c.id }}</p>
+            <li>model: {{ c.modelname }}</li>
+            <li>maintainer: {{ c.maintainer}}</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No cameras.</p>
+    {% endif %}
+
+    </body>
+</html> 
