@@ -5,6 +5,10 @@ class Camera(models.Model):
 	maintainer = models.CharField(max_length = 16)
 	macaddr = models.CharField(max_length = 16)
 	modelname = models.CharField(max_length = 16)
+	ip = models.CharField(max_length = 16, null=True)
+	platform = models.IntegerField(null=True)
+	account = models.CharField(max_length = 16, null=True)
+	passwd = models.CharField(max_length = 16, null=True)
 
 	def __unicode__(self):
 		return self.maintainer
