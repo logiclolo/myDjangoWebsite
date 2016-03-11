@@ -1,8 +1,9 @@
-angular.module('report', ['ngCookies']);
+angular.module('camera', ['ngCookies']);
 
-function on_load()
+function on_load($scope, $http)
 {
-	document.getElementById('input').focus();
+	//document.getElementById('input').focus();
+	query_all($scope, $http)
 }
 
 function on_change(input)
@@ -23,9 +24,30 @@ function translate(data)
 	}
 }
 
+function query_all(scope, http)
+{
+	http.get('/ynm/camera/')
+	success(function(data) {
+		if (data.status == 'ok')
+		{
+			scope.cameras = data.data;
+			scope.hasdata = true;
+		}
+		else if (data.status == 'error')
+		{
+			scope.cameras = null;
+			scope.hasdata = false;
+		}
+	}).
+	error(function (data, status, headers, config) {
+		var msg = data || errmsg("Connection failure");
+		alert(msg + "\n" + config.url);
+	});
+}
+
 function query_maintainer(scope, http, name)
 {
-	http.get('/ynm/report/?maintainer=' + encodeURIComponent(name)).
+	http.get('/ynm/camera/?maintainer=' + encodeURIComponent(name)).
 	success(function(data) {
 		if (data.status == 'ok')
 		{
@@ -49,7 +71,7 @@ function query_modelname(scope, http, text)
 	if (text != scope.input)
 		return;
 
-	http.get('/ynm/report/?modelname=' + text).
+	http.get('/ynm/camera/?modelname=' + text).
 	success(function(data) {
 		if (data.status == 'ok')
 		{
@@ -96,7 +118,7 @@ function submit_queue(scope, http, prize)
 	});
 }
 
-function report_ctrl($scope, $http, $cookies, $timeout)
+function camera_ctrl($scope, $http, $cookies, $timeout)
 {
 	$scope.hasdata = false;
 

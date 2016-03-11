@@ -1,0 +1,99 @@
+<!DOCTYPE HTML>
+<html ng-app>
+<head>
+<meta charset="utf-8">
+<title>Employee all</title>
+<script src="angular.js"></script>
+<script src="errmsg.js"></script>
+<script src="camera_all.js"></script>
+<link rel="stylesheet" type="text/css" href="global.css">
+</head>
+
+<body ng-controller="camera_all_ctrl">
+	<div class="search" ng-show="search">
+		<span>Search：</span>
+		<input id="input" class="textfield" type="text" ng-model="input">
+	</div>
+	<div class="content">
+		<h3 ng-show="hasdata">共 {{cameras.length}} 筆資料</h3>
+		<h3 ng-show="nodata">無機種資料</h3>
+		<h3 ng-show="loaddata">讀取資料中</h3>
+		<table class="hasdata" ng-show="hasdata">
+			<tr>
+				<th>維護人</th><th>產品型號</th><th>Mac address</th><th>更新</th>
+			</tr>
+			<tr ng-repeat="camera in cameras | filter:input " ng-class-odd="" ng-class-even="'even'">
+				<td>{{camera.maintainer}}</td><td>{{camera.modelname}}</td><td>{{camera.macaddr}}</td><td><input type="button" value="Update" ng-click="on_click(this)"></input></td>
+			</tr>
+		</table>
+	</div>
+	<div class="content">
+		<form action="/ynm/update/" method="post" enctype="multipart/form-data" ng-show="updatedata">
+			<table class="hasdata">
+				<tr>
+					<td>
+					維護人:
+					</td>
+					<td>
+						<input id="id_camera_maintainer" maxlength="16" ng-model="camera.maintainer" name="maintainer" type="text"> 
+					</td>
+				</tr>
+				<tr>
+					<td>
+					產品型號:
+					</td>
+					<td>
+						<input id="id_model_name" maxlength="16" ng-model="camera.modelname" name="modelname" type="text"> 
+					</td>
+				</tr>
+				<tr>
+					<td>
+					平台:
+					</td>
+					<td>
+						<select id="platform" ng-model="camera.platform" name="platform"> 
+							<option value=1>Rossini</option>
+							<option value=2>Hisillicon Standard</option>
+							<option value=3>Hisillicon Speeddome</option>
+					</td>
+				</tr>
+				<tr>
+					<td>
+					IP Address:
+					</td>
+					<td>
+						<input id="ip" maxlength="16" ng-model="camera.ip" name="ip" type="text"> 
+					</td>
+				</tr>
+				<tr>
+					<td>
+					MAC Address:
+					</td>
+					<td>
+						<input id="id_mac_addr" maxlength="16" ng-model="camera.macaddr" name="macaddr" type="text"> 
+					</td>
+				</tr>
+				<tr>
+					<td>
+					帳號:
+					</td>
+					<td>
+						<input id="account" maxlength="16" ng-model="camera.account" name="account" type="text"> 
+					</td>
+				</tr>
+				<tr>
+					<td>
+					密碼:
+					</td>
+					<td>
+						<input id="passwd" maxlength="16" ng-model="camera.passwd" name="passwd" type="text"> 
+					</td>
+				</tr>
+				<input ng-model="camera.id" name="id" type="text" style="display:none"> 
+			</table>
+			<input type="submit" value="update">
+		</form>
+	</div>
+	<div class="footer">
+	</div>
+</body>

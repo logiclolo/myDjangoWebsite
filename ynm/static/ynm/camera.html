@@ -1,0 +1,37 @@
+<!DOCTYPE HTML>
+<html ng-app="camera">
+<head>
+<meta charset="utf-8">
+<title>Report</title>
+<script src="angular.js"></script>
+<script src="angular-cookies.js"></script>
+<script src="errmsg.js"></script>
+<script src="camera.js"></script>
+<link rel="stylesheet" type="text/css" href="global.css">
+</head>
+
+<body ng-controller="camera_ctrl" onload="on_load()">
+	<div class="content">
+		<div class="search">
+			<span>輸入 '產品型號' 或 '維護人'：</span>
+			<input id="input" class="textfield" type="text" ng-model="input" ng-change="query_report()" onchange="on_change(this)">
+		</div>
+
+		<div ng-repeat="c in cameras" class="group" ng-show="hasdata">
+			<table>
+				<tr>
+					<td>產品型號：</td><td>{{c.modelname}}</td>
+				</tr>
+				<tr>
+					<td>維護人：</td><td>{{c.maintainer}}</td>
+				</tr>
+				<tr>
+					<td>Mac address：</td><td>{{c.macaddress}}</td>
+				</tr>
+			</table>
+		</div>
+
+	</div>
+	<div class="footer">
+	</div>
+</body>

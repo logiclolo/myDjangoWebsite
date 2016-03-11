@@ -17,7 +17,7 @@
 			<!--<input id="input" class="textfield" type="text" ng-model="input" ng-change="query_employee()" onchange="on_change(this)">-->
 		<!--</div>-->
 
-		<form action="/ynm/register/" method="get" enctype="multipart/form-data">
+		<form action="/ynm/register/" method="post" enctype="multipart/form-data">
 			<table>
 				<tr>
 					<td>
@@ -37,10 +37,45 @@
 				</tr>
 				<tr>
 					<td>
+					平台:
+					</td>
+					<td>
+						<select id="platform" name="platform"> 
+							<option value=1>Rossini</option>
+							<option value=2>Hisillicon Standard</option>
+							<option value=3>Hisillicon Speeddome</option>
+					</td>
+				</tr>
+				<tr>
+					<td>
+					IP Address:
+					</td>
+					<td>
+						<input id="ip" maxlength="16" name="ip" type="text"> 
+					</td>
+				</tr>
+				<tr>
+					<td>
 					MAC Address:
 					</td>
 					<td>
 						<input id="id_mac_addr" maxlength="16" name="macaddr" type="text"> 
+					</td>
+				</tr>
+				<tr>
+					<td>
+					帳號:
+					</td>
+					<td>
+						<input id="account" maxlength="16" name="account" type="text"> 
+					</td>
+				</tr>
+				<tr>
+					<td>
+					密碼:
+					</td>
+					<td>
+						<input id="passwd" maxlength="16" name="passwd" type="text"> 
 					</td>
 				</tr>
 			</table>
