@@ -20,16 +20,27 @@
 		<h3 ng-show="loaddata">讀取資料中</h3>
 		<table class="hasdata" ng-show="hasdata">
 			<tr>
-				<th>維護人</th><th>產品型號</th><th>Mac address</th><th>更新</th>
+				<th>維護人</th><th>產品型號</th><th>IP</th><th>更新</th>
 			</tr>
-			<tr ng-repeat="camera in cameras | filter:input " ng-class-odd="" ng-class-even="'even'">
-				<td>{{camera.maintainer}}</td><td>{{camera.modelname}}</td><td>{{camera.macaddr}}</td><td><input type="button" value="Update" ng-click="on_click(this)"></input></td>
+			<tr ng-repeat="camera in cameras | filter:input" ng-class-odd="" ng-class-even="'even'">
+				<td>{{camera.maintainer}}</td><td>{{camera.modelname}}</td><td>{{camera.ip}}</td><td><input type="button" value="Update" ng-click="on_click(this)"></input></td>
+			</tr>
+		</table>
+	</div>
+	<div class="content" ng-show="update_done_hasdata">
+		<h3>更新成功</h3>
+		<table class="hasdata">
+			<tr>
+				<th>維護人</th><th>產品型號</th><th>平台</th><th>IP</th><th>MAC</th><th>帳號</th><th>密碼</th>
+			</tr>
+			<tr ng-repeat="camera in cameras" ng-class-odd="" ng-class-even="'even'">
+				<td>{{camera.maintainer}}</td><td>{{camera.modelname}}</td><td>{{camera.platform}}</td><td>{{camera.ip}}</td><td>{{camera.macaddr}}</td><td>{{camera.account}}</td><td>{{camera.passwd}}</td>
 			</tr>
 		</table>
 	</div>
 	<div class="content">
-		<form action="/ynm/update/" method="post" enctype="multipart/form-data" ng-show="updatedata">
-			<table class="hasdata">
+		<form ng-show="update_hasdata" ng-submit="submit_form()">
+			<table class="">
 				<tr>
 					<td>
 					維護人:
@@ -67,7 +78,7 @@
 				</tr>
 				<tr>
 					<td>
-					MAC Address:
+					MAC:
 					</td>
 					<td>
 						<input id="id_mac_addr" maxlength="16" ng-model="camera.macaddr" name="macaddr" type="text"> 
@@ -89,7 +100,7 @@
 						<input id="passwd" maxlength="16" ng-model="camera.passwd" name="passwd" type="text"> 
 					</td>
 				</tr>
-				<input ng-model="camera.id" name="id" type="text" style="display:none"> 
+				<input name="id" ng-model="camera.id" type="text" style="display:none"> 
 			</table>
 			<input type="submit" value="update">
 		</form>

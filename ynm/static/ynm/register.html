@@ -16,15 +16,27 @@
 			<!--<span>輸入工號或姓名：</span>-->
 			<!--<input id="input" class="textfield" type="text" ng-model="input" ng-change="query_employee()" onchange="on_change(this)">-->
 		<!--</div>-->
+	<div class="content" ng-show="register_done_hasdata">
+		<h3>註冊成功</h3>
+		<table class="hasdata">
+			<tr>
+				<th>維護人</th><th>產品型號</th><th>平台</th><th>IP</th><th>MAC</th><th>帳號</th><th>密碼</th>
+			</tr>
+			<tr ng-repeat="camera in cameras" ng-class-odd="" ng-class-even="'even'">
+				<td>{{camera.maintainer}}</td><td>{{camera.modelname}}</td><td>{{camera.platform}}</td><td>{{camera.ip}}</td><td>{{camera.macaddr}}</td><td>{{camera.account}}</td><td>{{camera.passwd}}</td>
+			</tr>
+		</table>
+	</div>
 
-		<form action="/ynm/register/" method="post" enctype="multipart/form-data">
+		<!--<form action="/ynm/register/" method="post" enctype="multipart/form-data">-->
+		<form ng-show="register_hasdata" ng-submit="submit_form()">
 			<table>
 				<tr>
 					<td>
 					維護人:
 					</td>
 					<td>
-						<input id="id_camera_maintainer" maxlength="16" name="maintainer" type="text"> 
+						<input id="maintainer" maxlength="16" name="maintainer" ng-model="camera.maintainer" type="text"> 
 					</td>
 				</tr>
 				<tr>
@@ -32,7 +44,7 @@
 					產品型號:
 					</td>
 					<td>
-						<input id="id_model_name" maxlength="16" name="modelname" type="text"> 
+						<input id="modelname" maxlength="16" name="modelname" ng-model="camera.modelname" type="text"> 
 					</td>
 				</tr>
 				<tr>
@@ -40,7 +52,7 @@
 					平台:
 					</td>
 					<td>
-						<select id="platform" name="platform"> 
+						<select id="platform" name="platform" ng-init="camera.platform=1" ng-model="camera.platform"> 
 							<option value=1>Rossini</option>
 							<option value=2>Hisillicon Standard</option>
 							<option value=3>Hisillicon Speeddome</option>
@@ -51,15 +63,15 @@
 					IP Address:
 					</td>
 					<td>
-						<input id="ip" maxlength="16" name="ip" type="text"> 
+						<input id="ip" maxlength="16" name="ip" ng-model="camera.ip" type="text"> 
 					</td>
 				</tr>
 				<tr>
 					<td>
-					MAC Address:
+					MAC:
 					</td>
 					<td>
-						<input id="id_mac_addr" maxlength="16" name="macaddr" type="text"> 
+						<input id="macaddr" maxlength="16" name="macaddr" ng-model="camera.macaddr" type="text"> 
 					</td>
 				</tr>
 				<tr>
@@ -67,7 +79,7 @@
 					帳號:
 					</td>
 					<td>
-						<input id="account" maxlength="16" name="account" type="text"> 
+						<input id="account" maxlength="16" name="account" ng-model="camera.account" type="text"> 
 					</td>
 				</tr>
 				<tr>
@@ -75,34 +87,12 @@
 					密碼:
 					</td>
 					<td>
-						<input id="passwd" maxlength="16" name="passwd" type="text"> 
+						<input id="passwd" maxlength="16" name="passwd" ng-model="camera.passwd" type="text"> 
 					</td>
 				</tr>
 			</table>
 			<input type="submit" value="Upload">
 		</form>
-
-		<!--<div ng-repeat="e in employees" class="group" ng-show="hasdata">-->
-
-			<!--<div id="prizedata">-->
-				<!--<span ng-hide="e.prizes">無中獎資料</span>-->
-				<!--<table class="hasdata" ng-show="e.prizes">-->
-					<!--<tr>-->
-						<!--<th>獎次</th><th>類別</th><th>名稱</th><th>現場領？</th><th>已領取？</th>-->
-					<!--</tr>-->
-					<!--<tr ng-repeat="p in e.prizes" ng-class-odd="" ng-class-even="'even'">-->
-						<!--<td>{{p.serial}}</td><td>{{p.phase}}</td><td>{{p.name}}</td><td class="marker"><span ng-show="p.onsite">◎</span></td>-->
-						<!--<td>-->
-							<!--<span ng-show="p.onsite">{{p.receiving_status}}</span>-->
-							<!--<input type="button" ng-show="receivable(p)" value="領取" ng-click="submit_queue(p)" ng-disabled="p.is_sync"></input>-->
-							<!--<span class="error" ng-show="p.errmsg">{{p.errmsg}}</span>-->
-							<!--<span class="success" ng-show="p.is_sync">已加入佇列{{p.queue_id}}</span>-->
-						<!--</td>-->
-					<!--</tr>-->
-				<!--</table>-->
-			<!--</div>-->
-		<!--</div>-->
-
 	</div>
 	<div class="footer">
 	</div>

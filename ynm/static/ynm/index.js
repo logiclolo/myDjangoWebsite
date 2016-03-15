@@ -36,7 +36,8 @@ function select(link)
 
 function on_click(link)
 {
-	//if (prev_selected_link === link)
+	if (prev_selected_link === link)
+		prev_selected_link = null;
 		//return false;
 
 	set_iframe(link.href);

@@ -33,31 +33,31 @@ def register(req):
 	data = []
 
 	if req.POST != None:
-		print 'POST'
-		add_camera(req.POST)
-		cameras = Camera.objects.all()
-		for camera in cameras:
-			tmp = fill_camera_data(camera)
-			data.append(tmp)
+		jdata = json.loads(req.body)
+		add_camera(jdata)
+
+		# fetch the latest one
+		camera = Camera.objects.all().order_by('-id')[0]
+		tmp = fill_camera_data(camera)
+		data.append(tmp)
 		
-		return HttpResponseRedirect('/ynm/camera')
+		return response_ok(data) 
 	elif req.GET != None:
-		print 'GET'
 		add_camera(req.GET)
-		cameras = Camera.objects.all()
-		for camera in cameras:
-			tmp = fill_camera_data(camera)
-			data.append(tmp)
 		
 		return HttpResponseRedirect('/ynm/camera')
-		#return response_ok(data) 
 
 @csrf_exempt # for POST requests
 def update(req):
 	data = []
 
-	update_camera(req.POST)
-	camera = Camera.objects.get(id = req.POST['id'])
+	if req.method != 'POST':
+		return response_error('Invalid method');
+
+	obj = json.loads(req.body)
+
+	update_camera(obj)
+	camera = Camera.objects.get(id = obj['id'])
 
 	tmp = fill_camera_data(camera)
 	data.append(tmp)
