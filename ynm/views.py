@@ -5,6 +5,16 @@ import json
 import requests
 from django.views.decorators.csrf import csrf_exempt
 
+platform = {
+	'Rossini'             : 1,
+	'Hisillicon Standard' : 2,
+	'Hisillicon Speeddome': 3,
+}
+
+url = 'http://rd1-ci1.vivotek.tw/jenkins/job/onefw-ci-autotest/buildWithParameters/'
+token = 'run_onefw_auto_test'
+
+
 # Create your views here.
 def camera(req):
 	data = []
@@ -32,20 +42,18 @@ def camera(req):
 def register(req):
 	data = []
 
-	if req.POST != None:
-		jdata = json.loads(req.body)
-		add_camera(jdata)
+	if req.method != 'POST':
+		return response_error('Invalid method');
 
-		# fetch the latest one
-		camera = Camera.objects.all().order_by('-id')[0]
-		tmp = fill_camera_data(camera)
-		data.append(tmp)
-		
-		return response_ok(data) 
-	elif req.GET != None:
-		add_camera(req.GET)
-		
-		return HttpResponseRedirect('/ynm/camera')
+	jdata = json.loads(req.body)
+	update_camera(jdata, 'add')
+
+	# fetch the latest one
+	camera = Camera.objects.all().order_by('-id')[0]
+	tmp = fill_camera_data(camera)
+	data.append(tmp)
+	
+	return response_ok(data) 
 
 @csrf_exempt # for POST requests
 def update(req):
@@ -54,11 +62,10 @@ def update(req):
 	if req.method != 'POST':
 		return response_error('Invalid method');
 
-	obj = json.loads(req.body)
+	jdata = json.loads(req.body)
+	update_camera(jdata, 'update')
 
-	update_camera(obj)
-	camera = Camera.objects.get(id = obj['id'])
-
+	camera = Camera.objects.get(id = jdata['id'])
 	tmp = fill_camera_data(camera)
 	data.append(tmp)
 
@@ -104,28 +111,28 @@ def response_error(reason):
 	out = json.dumps(result, ensure_ascii = False)
 	return HttpResponse(out, content_type = 'application/json')
 
-def update_camera(obj):
-	camera = Camera.objects.get(id = obj['id'])
+def update_camera(obj, method):
+	if method == 'add':
+		camera = Camera()
+	elif method == 'update':
+		camera = Camera.objects.get(id = obj['id'])
+	else:
+		return None
 
-	camera.maintainer = obj['maintainer'] 
-	camera.modelname = obj['modelname'] 
-	camera.macaddr = obj['macaddr'] 
-	camera.ip = obj['ip']
-	camera.platform = obj['platform']
-	camera.account = obj['account']
-	camera.passwd = obj['passwd']
-
-	camera.save()
-
-def add_camera(obj):
-	camera = Camera()
-	camera.maintainer = obj['maintainer'] 
-	camera.modelname = obj['modelname'] 
-	camera.macaddr = obj['macaddr'] 
-	camera.ip = obj['ip']
-	camera.platform = obj['platform']
-	camera.account = obj['account']
-	camera.passwd = obj['passwd']
+	if obj.has_key('maintainer'):
+		camera.maintainer = obj['maintainer'] 
+	if obj.has_key('modelname'):
+		camera.modelname = obj['modelname'] 
+	if obj.has_key('macaddr'):
+		camera.macaddr = obj['macaddr'] 
+	if obj.has_key('ip'):
+		camera.ip = obj['ip']
+	if obj.has_key('platform'):
+		camera.platform = obj['platform']
+	if obj.has_key('account'):
+		camera.account = obj['account']
+	if obj.has_key('passwd'):
+		camera.passwd = obj['passwd']
 
 	camera.save()
 
@@ -154,14 +161,9 @@ def fill_report_data(obj):
 	print tmp
 	return tmp
 
-def issue(obj):
-	pass
-
-def auto_test_request(obj):
+def autotest_request(obj):
 	tmp = {}
 	config = {}
-	url = 'http://rd1-ci1.vivotek.tw/jenkins/job/onefw-ci-autotest/buildWithParameters/'
-	token = 'run_onefw_auto_test'
 
 	config['ip'] = obj.ip 
 	config['mac'] = obj.macaddr 
@@ -172,7 +174,30 @@ def auto_test_request(obj):
 	tmp['token'] = token 
 
 	r = requests.post(url, data=tmp)
-	#print r.status_code
+	print r.status_code
+
+###################################
+# URL API
+###################################
+@csrf_exempt # for POST requests
+def new_autotest_task(req):
+	data = []
+
+	plat = req.POST['platform']
+	if platform.has_key(plat):
+		cameras = Camera.objects.filter(platform = platform[plat])
+		for camera in cameras:
+			autotest_request(camera)
+
+		return response_ok(data)
+	else:
+		return response_error('No such platform')
+
+def save_autotest_result(req): 
+	# not implement yet
+	pass
+
+
 
 
 # vim: tabstop=8 shiftwidth=8 softtabstop=8 noexpandtab
